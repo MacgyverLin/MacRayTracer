@@ -10,14 +10,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
-#include "Vector3.h"
-#include "Ray3.h"
-#include "Camera.h"
-#include "ColorRGB.h"
-#include "Light.h"
-#include "Sphere3.h"
-#include "Plane3.h"
-
 using namespace std;
 
 struct RGBType
@@ -96,34 +88,6 @@ int main()
     int height = 480;
 
     RGBType* pixels = new RGBType[width * height];
-
-    Vector3 O(0, 0, 0);
-    Vector3 X(1, 0, 0);
-    Vector3 Y(0, 1, 0);
-    Vector3 Z(0, 0, 1);
-
-    Vector3 camPosition(3, 1.5, -4);
-    Vector3 camTarget(0, 0, 0);
-    Vector3 camDir = camTarget.Sub(camPosition).Normalize();
-    Vector3 camRight = Y.Cross(camDir).Normalize();
-    Vector3 camUp = camRight.Cross(camDir);
-    Camera sceneCam(camPosition, camDir, camRight, camUp);
-
-
-    ColorRGB white(1, 1, 1, 0);
-    ColorRGB cyan(0.5, 1.0, 0.5, 0.3);
-    ColorRGB maroon(0.5, 0.25, 0.25, 0);
-    ColorRGB gray(0.5, 0.5, 0.5, 0);
-    ColorRGB black(0.0, 0.0, 0.0, 0);    
-
-    Vector3 lightPosition(-7, 10, -10);
-    Light whiteLight(lightPosition, white);
-    
-    Vector3 spherePosition(0, 0, 0);
-    double sphereRadius = 1.0;
-    ColorRGB sphereColor(1, 1, 1, 0);
-    Sphere3 sphere(spherePosition, sphereRadius, cyan);
-    Plane3 plane(Y, -1, maroon);
 
     for (int x = 0; x < width; x++)
     {
