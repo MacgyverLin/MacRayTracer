@@ -1,111 +1,207 @@
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <vector>
-#include <iostream>
-#include <cmath>
-#include <limits>
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <float.h>
+#include <math.h>
+#include <iostream>
+
+#include "util.h"
+#include "vec3.h"
+#include "ray3.h"
+#include "bitmap.h"
+#include "trace_record.h"
+#include "world3.h"
+#include "camera3.h"
+#include "sphere3.h"
+#include "material.h"
 using namespace std;
 
-struct RGBType
+float hit_sphere(const vec3& center, float radius, const ray3& r)
 {
-    double r;
-    double g;
-    double b;
-};
+    vec3 oc = r.origin() - center;
+    float a = dot(r.direction(), r.direction());
+    float b = 2.0 * dot(oc, r.direction());
+    float c = dot(oc, oc) - radius * radius;
+    float discriminant = b * b - 4 * a * c;
 
-void savebmp(const char* filename, int w, int h, int dpi, RGBType* data)
+    if (discriminant < 0)
+        return -1;
+    else
+        return (-b - sqrtf(discriminant)) / (2.0 * a);
+}
+
+vec3 color0(const ray3& r)
 {
-    FILE* f;
-    int k = w * h;
-    int s = 4 * k;
-    int filesize = 54 + s;
-    double factor = 39.375;
-    int m = static_cast<int>(factor);
-
-    int ppm = dpi * m;
-    unsigned char bmpfileheader[14] = {'B','M',     0,0,0,0, 0,0,0,0, 54,0, 0,0 };
-    unsigned char bmpinfoheader[40] = { 40,0,0,0,   0,0,0,0, 0,0,0,0,  1,0,24,0 };
-
-    bmpfileheader[2]  = (unsigned char)(filesize);
-    bmpfileheader[3]  = (unsigned char)(filesize>>8);
-    bmpfileheader[4]  = (unsigned char)(filesize>>16);
-    bmpfileheader[5]  = (unsigned char)(filesize>>24);
-
-    bmpinfoheader[ 4] = (unsigned char)(w);
-    bmpinfoheader[ 5] = (unsigned char)(w >> 8);
-    bmpinfoheader[ 6] = (unsigned char)(w >> 16);
-    bmpinfoheader[ 7] = (unsigned char)(w >> 24);
-    
-    bmpinfoheader[ 8] = (unsigned char)(h);
-    bmpinfoheader[ 9] = (unsigned char)(h >> 8);
-    bmpinfoheader[10] = (unsigned char)(h >> 16);
-    bmpinfoheader[11] = (unsigned char)(h >> 24);
-
-    bmpinfoheader[21] = (unsigned char)(s);
-    bmpinfoheader[22] = (unsigned char)(s >> 8);
-    bmpinfoheader[23] = (unsigned char)(s >> 16);
-    bmpinfoheader[24] = (unsigned char)(s >> 24);
-
-    bmpinfoheader[25] = (unsigned char)(ppm);
-    bmpinfoheader[26] = (unsigned char)(ppm >> 8);
-    bmpinfoheader[27] = (unsigned char)(ppm >> 16);
-    bmpinfoheader[28] = (unsigned char)(ppm >> 24);
-
-    bmpinfoheader[29] = (unsigned char)(ppm);
-    bmpinfoheader[30] = (unsigned char)(ppm >> 8);
-    bmpinfoheader[31] = (unsigned char)(ppm >> 16);
-    bmpinfoheader[32] = (unsigned char)(ppm >> 24);
-
-    f = fopen(filename, "wb");
-    fwrite(bmpfileheader, 1, sizeof(bmpfileheader)/ sizeof(char), f);
-    fwrite(bmpinfoheader, 1, sizeof(bmpinfoheader) / sizeof(char), f);
-
-    unsigned char color[3];
-    for (int i = 0; i < k; i++)
+    float t = hit_sphere(vec3(0, 0, -1), 0.5, r);
+    if(t > 0)
     {
-        color[0] = (int)floor(data[i].b * 255);
-        color[1] = (int)floor(data[i].g * 255);
-        color[2] = (int)floor(data[i].r * 255);
+        vec3 v1 = r.point_at_parameter(t);
+        vec3 N = v1 - vec3(0, 0, -1);
+        N = unit_vector(N);
+        return 0.5 * (N + vec3(1, 1, 1));
+        //return vec3(1, 0, 0);
+    }
+    else
+    {
+        vec3 unit_direction = unit_vector(r.direction());
+        float t = 0.5 * (unit_direction.y() + 1.0);
+        return vec3(1.0, 1.0, 1.0) * (1.0 - t) + vec3(0.5, 0.7, 1.0) * t;
+    }        
+}
 
-        fwrite(color, 1, 3, f);
+vec3 color1(const world3& world, const ray3& r)
+{
+    trace_record record;
+
+    if (world.trace(r, 0.001, FLT_MAX, record))
+    {
+        return 0.5*(record.normal + vec3(1, 1, 1));
+    }
+    else
+    {
+        vec3 unit_direction = unit_vector(r.direction());
+        float t = 0.5 * (unit_direction.y() + 1.0);
+        return vec3(1.0, 1.0, 1.0) * (1.0 - t) + vec3(0.5, 0.7, 1.0) * t;
+    }
+}
+
+vec3 color2(const world3& world, const ray3& r)
+{
+    trace_record record;
+
+    if (world.trace(r, 0.001, FLT_MAX, record))
+    {
+        vec3 target = record.position + record.normal + random_in_unit_sphere();
+        return 0.5 * color2(world, ray3(record.position, target - record.position));
+    }
+    else
+    {
+        vec3 unit_direction = unit_vector(r.direction());
+        float t = 0.5 * (unit_direction.y() + 1.0);
+        return vec3(1.0, 1.0, 1.0) * (1.0 - t) + vec3(0.5, 0.7, 1.0) * t;
+    }
+}
+
+vec3 color3(const world3& world, const ray3& r, int depth)
+{
+    trace_record record;
+    if (world.trace(r, 0.001, FLT_MAX, record))
+    {
+        ray3 scattered;
+        vec3 atteunation;
+
+        if (depth > 0 && record.mat->scatter(r, record, atteunation, scattered))
+        {
+            return atteunation * color3(world, scattered, depth - 1);
+        }
+        else
+            return vec3(0, 0, 0);
+    }
+    else
+    {
+        vec3 unit_direction = unit_vector(r.direction());
+        float t = 0.5 * (unit_direction.y() + 1.0);
+        return vec3(1.0, 1.0, 1.0) * (1.0 - t) + vec3(0.5, 0.7, 1.0) * t;
+    }
+}
+
+vec3 gamma_correction(const vec3& c, float gamma)
+{
+    return vec3(pow(c[0], gamma), pow(c[1], gamma), pow(c[2], gamma));
+}
+
+void scene1(world3& world)
+{
+    world.add(new sphere3(vec3(0, -100.5, -1), 100, new lambertian(vec3(0.8, 0.8, 0.0))));
+    world.add(new sphere3(vec3(1, 0, -1), 0.5, new metal(vec3(0.8, 0.6, 0.2))));
+    world.add(new sphere3(vec3(-1, 0, -1), 0.5, new dielectric(vec3(1.0, 1.0, 1.0), 1.5)));
+    world.add(new sphere3(vec3(-1, 0, -1), -0.49, new dielectric(vec3(1.0, 1.0, 1.0), 1.5)));
+    world.add(new sphere3(vec3(0, 0, -1), 0.5, new lambertian(vec3(0.1, 0.2, 0.5))));
+}
+
+void scene2(world3& world)
+{
+    world.add(new sphere3(vec3(0, -1000, 0), 1000, new lambertian(vec3(0.5, 0.5, 0.5))));
+
+    for (int z = -11; z < 11; z++)
+    {
+        for (int x = -11; x < 11; x++)
+        {
+            float material_sel = random();
+            
+            vec3 center(x + random() * - 0.5, 0.2, z + random() * - 0.5);
+            if (material_sel < 0.8) // diffuse
+            {
+                world.add(new sphere3(center, 0.2, 
+                    new lambertian(vec3(random(), random(), random()))));
+            }
+            else if (material_sel < 0.95) // metal
+            {
+                world.add(new sphere3(center, 0.2, 
+                    new metal(vec3(0.5+ 0.5*random(), 0.5 + 0.5 * random(), 0.5 + 0.5 * random()), 
+                        random() * 0.5)));
+            }
+            else if (material_sel < 0.8) // dielectric
+            {
+                world.add(new sphere3(center, 0.2, 
+                    new dielectric(vec3(1, 1, 1), 1.5)));
+            }
+        }
     }
 
-    fclose(f);
+    world.add(new sphere3(vec3( 0, 1, 0), 1.0, new dielectric(vec3(1, 1, 1), 1.5)));
+    world.add(new sphere3(vec3(-6, 1, 0), 1.0, new lambertian(vec3(0.4, 0.2, 0.1))));
+    world.add(new sphere3(vec3( 6, 1, 0), 1.0, new metal(vec3(0.7, 0.6, 0.5), 0.0)));    
 }
 
 int main()
 {
-    cout << "Rendering..." << endl;
+    // Image Parameter
+    const auto aspect_ratio = 16.0 / 9.0;
+    const int image_width = 400;
+    const int image_height = static_cast<int>(image_width / aspect_ratio);
+    const int samples_per_pixel = 16;
+    const int max_depth = 50;
+    
+    bitmap bmp(image_width, image_height);
 
-    int dpi = 72;
-    int width = 640;
-    int height = 480;
+    // world
+    world3 world;
+    // scene1(world);
+    scene2(world);
 
-    RGBType* pixels = new RGBType[width * height];
+    // camera
+    vec3 lookfrom(13, 2, 3);
+    vec3 lookat(0, 0, 0);
+    vec3 vup(0, 1, 0);
+    auto dist_to_focus = 10.0;
+    auto aperture = 0.1;
+    camera3 camera(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus);
 
-    for (int x = 0; x < width; x++)
+    for (int j = 0; j < image_height; j++)
     {
-        for (int y = 0; y < height; y++)
+        for (int i = 0; i < image_width; i++)
         {
-            // start with no antialiasing
+            vec3 color(0, 0, 0);
+            for (int s = 0; s < samples_per_pixel; s++)
+            {
+                float u = float(i + random()) / float(image_width);
+                float v = float(j + random()) / float(image_height);
 
-            int idx = y * width + x;
-            if((x>200 && x<440) && (y > 200 && y < 280))
-                pixels[idx] = { 0, 0, 1.0 };
-            else
-                pixels[idx] = { 1.0, 0, 0.0 };
+                ray3 r = camera.get_ray(u, v);
+                color += color3(world, r, max_depth);
+            }
+
+            color /= samples_per_pixel;
+            color = gamma_correction(color, 1.0/2.2f);
+
+            bmp.setPixel(i, j, floor(255 * color[0]), floor(255 * color[1]), floor(255 * color[2]));
         }
+        std::cout << "line:" << j << std::endl;
     }
 
-    savebmp("1.bmp", width, height, dpi, pixels);
-
-    delete[] pixels;
+    bmp.saveBMP("1.bmp");
+    bmp.savePPM("1.ppm");
 
     return 0;
 }

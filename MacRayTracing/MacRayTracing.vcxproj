@@ -149,6 +149,18 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="bitmap.h" />
+    <ClInclude Include="camera3.h" />
+    <ClInclude Include="material.h" />
+    <ClInclude Include="object3.h" />
+    <ClInclude Include="ray3.h" />
+    <ClInclude Include="sphere3.h" />
+    <ClInclude Include="trace_record.h" />
+    <ClInclude Include="util.h" />
+    <ClInclude Include="vec3.h" />
+    <ClInclude Include="world3.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
