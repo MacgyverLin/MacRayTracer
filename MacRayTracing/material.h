@@ -26,7 +26,7 @@ public:
 	{
 		vec3 target = record.position + record.normal + random_in_unit_sphere();
 		
-		scattered = ray3(record.position, target - record.position);
+		scattered = ray3(record.position, target - record.position, in.time());
 		atteunation = albedo;
 		return true;
 	}
@@ -51,7 +51,7 @@ public:
 	virtual bool scatter(const ray3& in, const trace_record& record, vec3& atteunation, ray3& scattered) const
 	{
 		vec3 reflected = reflect(unit_vector(in.direction()), record.normal);
-		scattered = ray3(record.position, reflected + fuzz*random_in_unit_sphere());
+		scattered = ray3(record.position, reflected + fuzz*random_in_unit_sphere(), in.time());
 		atteunation = albedo;
 		
 		return dot(scattered.direction(), record.normal)>0;
@@ -132,11 +132,11 @@ public:
 
 		if (random() < reflect_prob)
 		{
-			scattered = ray3(record.position, reflected);
+			scattered = ray3(record.position, reflected, in.time());
 		}
 		else
 		{
-			scattered = ray3(record.position, refracted);
+			scattered = ray3(record.position, refracted, in.time());
 		}
 
 		return true;
@@ -159,7 +159,7 @@ public:
 			isRefracted = refract(i,  n, 1.0 / ior, refracted);
 		}
 
-		scattered = ray3(record.position, isRefracted ? refracted : reflect(i, n));
+		scattered = ray3(record.position, isRefracted ? refracted : reflect(i, n), in.time());
 
 		return true;
 	}

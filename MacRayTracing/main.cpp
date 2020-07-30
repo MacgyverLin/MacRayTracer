@@ -72,7 +72,7 @@ vec3 color2(const world3& world, const ray3& r)
     if (world.trace(r, 0.001, FLT_MAX, record))
     {
         vec3 target = record.position + record.normal + random_in_unit_sphere();
-        return 0.5 * color2(world, ray3(record.position, target - record.position));
+        return 0.5 * color2(world, ray3(record.position, target - record.position, r.time()));
     }
     else
     {
@@ -119,10 +119,15 @@ void scene1(world3& world)
     world.add(new sphere3(vec3(0, 0, -1), 0.5, new lambertian(vec3(0.1, 0.2, 0.5))));
 }
 
-void scene2(world3& world)
+void scene2(world3& world, int lamberts, int metals, int glasses)
 {
-    world.add(new sphere3(vec3(0, -1000, 0), 1000, new lambertian(vec3(0.5, 0.5, 0.5))));
+    float total = lamberts + metals + glasses;
+    float ratio0 = (float)((lamberts)) / total;
+    float ratio1 = (float)((lamberts + metals)) / total;
+    float ratio2 = (float)((lamberts + metals + glasses)) / total;
 
+
+    world.add(new sphere3(vec3(0, -1000, 0), 1000, new lambertian(vec3(0.5, 0.5, 0.5))));
     for (int z = -11; z < 11; z++)
     {
         for (int x = -11; x < 11; x++)
@@ -130,21 +135,44 @@ void scene2(world3& world)
             float material_sel = random();
             
             vec3 center(x + random() * - 0.5, 0.2, z + random() * - 0.5);
-            if (material_sel < 0.8) // diffuse
+            if (material_sel <= ratio0) // diffuse
             {
-                world.add(new sphere3(center, 0.2, 
-                    new lambertian(vec3(random(), random(), random()))));
+                world.add
+                (
+                    new sphere3
+                    (
+                        center, 
+                        0.2, 
+                        new lambertian(vec3(random(), random(), random())),
+                        vec3(random() * 3, random() * 3, random() * 3)
+                    )
+                );
             }
-            else if (material_sel < 0.95) // metal
+            else if (material_sel <= ratio1) // metal
             {
-                world.add(new sphere3(center, 0.2, 
-                    new metal(vec3(0.5+ 0.5*random(), 0.5 + 0.5 * random(), 0.5 + 0.5 * random()), 
-                        random() * 0.5)));
+                world.add
+                (
+                    new sphere3
+                    (
+                        center, 
+                        0.2, 
+                        new metal(vec3(0.5+ 0.5*random(), 0.5 + 0.5 * random(), 0.5 + 0.5 * random()), random() * 0.5),
+                        vec3(random() * 3, random() * 3, random() * 3)
+                    )
+                );
             }
-            else if (material_sel < 0.8) // dielectric
+            else if (material_sel <= ratio2) // dielectric
             {
-                world.add(new sphere3(center, 0.2, 
-                    new dielectric(vec3(1, 1, 1), 1.5)));
+                world.add
+                (
+                    new sphere3
+                    (
+                        center, 
+                        0.2, 
+                        new dielectric(vec3(1, 1, 1), 1.5),
+                        vec3(random() * 3, random() * 3, random() * 3)
+                    )
+                );
             }
         }
     }
@@ -158,9 +186,9 @@ int main()
 {
     // Image Parameter
     const auto aspect_ratio = 16.0 / 9.0;
-    const int image_width = 400;
+    const int image_width = 800;
     const int image_height = static_cast<int>(image_width / aspect_ratio);
-    const int samples_per_pixel = 16;
+    const int samples_per_pixel = 32;
     const int max_depth = 50;
     
     bitmap bmp(image_width, image_height);
@@ -168,7 +196,7 @@ int main()
     // world
     world3 world;
     // scene1(world);
-    scene2(world);
+    scene2(world, 4, 4, 2);
 
     // camera
     vec3 lookfrom(13, 2, 3);
@@ -176,7 +204,7 @@ int main()
     vec3 vup(0, 1, 0);
     auto dist_to_focus = 10.0;
     auto aperture = 0.1;
-    camera3 camera(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus);
+    camera3 camera(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus, 0, 1.0f/60.0f*3);
 
     for (int j = 0; j < image_height; j++)
     {

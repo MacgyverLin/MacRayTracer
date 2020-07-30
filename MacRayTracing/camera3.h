@@ -7,7 +7,7 @@
 class camera3
 {
 public:
-    camera3(vec3 from, vec3 at, vec3 up, float vfov, float aspect, float aperture, float focus_dist)
+    camera3(vec3 from, vec3 at, vec3 up, float vfov, float aspect, float aperture, float focus_dist, float t0, float t1)
     {
         float theta = vfov / 180.0f * 3.141592654;
         float half_height = tan(theta / 2);
@@ -23,22 +23,22 @@ public:
         this->vertical = v * focus_dist * height;
 
         this->lower_left_corner = this->origin - horizontal / 2 - vertical/2 - focus_dist * w;
-        lens_radius = aperture / 2;
-    }
+        this->lens_radius = aperture / 2;
 
-    void validate()
-    {
+        this->time0 = t0;
+        this->time1 = t1;
     }
 
     ray3 get_ray(float s, float t)
     {
         vec3 rd = lens_radius * random_in_unit_disk();
         vec3 offset = u * rd.x() + v * rd.y();
+        float time = time0 + (time1 - time0) * random();
 
         return ray3
         (
             origin + offset, 
-            lower_left_corner + horizontal * s + vertical * t - origin - offset
+            lower_left_corner + horizontal * s + vertical * t - origin - offset, time
         );
     }
 
@@ -50,7 +50,12 @@ public:
     vec3 horizontal;
     vec3 vertical;
 
+    // focus blur
     float lens_radius;
+
+    // shutter speed
+    float time0;
+    float time1;
 };
 
 #endif
