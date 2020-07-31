@@ -4,6 +4,147 @@
 #include "ray3.h"
 #include "trace_record.h"
 
+class texture
+{
+public:
+	texture()
+	{
+	}
+
+	virtual vec3 sample(float u, float v, const vec3& p) const = 0;
+};
+
+class const_texture : public texture
+{
+public:
+	const_texture(const vec3& color_)
+	: color(color_)
+	{
+	}
+
+	virtual vec3 sample(float u, float v, const vec3& p) const
+	{
+		return color;
+	}
+
+	vec3 color;
+};
+
+class perlin
+{
+public:
+	perlin()
+	{
+		if (!inited)
+		{
+			perlin_generate();
+			perlin_generate_prem(perm_x);
+			perlin_generate_prem(perm_y);
+			perlin_generate_prem(perm_z);
+
+			inited = true;
+		}
+	}
+
+	float sample(const vec3& p) const
+	{
+		float u = p.x() - floor(p.x());
+		float v = p.y() - floor(p.y());
+		float w = p.z() - floor(p.z());
+
+		int i = int(4 * p.x()) & 255;
+		int j = int(4 * p.y()) & 255;
+		int k = int(4 * p.z()) & 255;
+
+		return ranfloat[perm_x[i] ^ perm_y[j] ^ perm_z[k]];
+	}
+
+	static void perlin_generate()
+	{
+		for (int i = 0; i < 256; i++)
+		{
+			ranfloat[i] = random();
+		}
+	}
+
+	static void permute(int* p, int n)
+	{
+		for (int i = n - 1; i > 0; i--)
+		{
+			int target = int(random() * (i + 1));
+			int tmp = p[i];
+			p[i] = p[target];
+			p[target] = tmp;
+		}
+	}
+
+	static void perlin_generate_prem(int *p)
+	{
+		for (int i = 0; i < 256; i++)
+			p[i] = i;
+
+		permute(p, 256);
+	}
+
+	static bool inited;
+	static float ranfloat[256];
+	static int perm_x[256];
+	static int perm_y[256];
+	static int perm_z[256];
+};
+
+bool perlin::inited = false;
+float perlin::ranfloat[256];
+int perlin::perm_x[256];
+int perlin::perm_y[256];
+int perlin::perm_z[256];
+
+class perlin_noise_texture : public texture
+{
+public:
+	perlin_noise_texture(const vec3& color_ = vec3(1, 1, 1))
+	: color(color_)
+	{
+	}
+
+	virtual vec3 sample(float u, float v, const vec3& p) const
+	{
+		return vec3(1, 1, 1) * noise.sample(p);
+	}
+
+	vec3 color;
+	perlin noise;
+};
+
+class checker_texture : public texture
+{
+public:
+	checker_texture(shared_ptr<texture> texture0_, shared_ptr<texture> texture1_, const vec3& size_ = vec3(1, 1, 1))
+		: texture0(texture0_)
+		, texture1(texture1_)
+		, size(size_)
+	{
+	}
+
+	virtual vec3 sample(float u, float v, const vec3& p) const
+	{
+		float a = sin(p.x() * 3.14 / size.x()) * sin(p.y() * 3.14 / size.y()) * sin(p.z() * 3.14 / size.z());
+		if (a > 0)
+		{
+			return texture0->sample(u, v, p);
+		}
+		else
+		{
+			return texture1->sample(u, v, p);
+		}
+	}
+
+	shared_ptr<texture> texture0;
+	shared_ptr<texture> texture1;
+	vec3 size;
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 class material
 {
 public:
@@ -17,7 +158,7 @@ public:
 class lambertian : public material
 {
 public:
-	lambertian(const vec3& albedo)
+	lambertian(shared_ptr<texture> albedo)
 	{
 		this->albedo = albedo;
 	}
@@ -27,11 +168,13 @@ public:
 		vec3 target = record.position + record.normal + random_in_unit_sphere();
 		
 		scattered = ray3(record.position, target - record.position, in.time());
-		atteunation = albedo;
+		
+		atteunation = albedo->sample(0, 0, record.position);
+
 		return true;
 	}
 
-	vec3 albedo;
+	shared_ptr<texture> albedo;
 };
 
 class metal : public material

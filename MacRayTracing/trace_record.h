@@ -11,7 +11,7 @@ public:
 	float t;
 	vec3 position;
 	vec3 normal;
-	material* mat;
+	shared_ptr<material> mat;
 };
 
 #endif

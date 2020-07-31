@@ -150,6 +150,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="aabb3.h" />
     <ClInclude Include="bitmap.h" />
     <ClInclude Include="camera3.h" />
     <ClInclude Include="material.h" />

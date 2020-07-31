@@ -8,8 +8,16 @@
 #include <time.h>
 #include <float.h>
 #include <math.h>
+#include <memory>
+#include <vector>
+#include <map>
+using namespace std;
 
 #include "vec3.h"
+
+inline float ffmin(float a, float b) { return a < b ? a : b; }
+inline float ffmax(float a, float b) { return a > b ? a : b; }
+
 
 bool savePPM(const char* filename, int w, int h, unsigned char* data)
 {
