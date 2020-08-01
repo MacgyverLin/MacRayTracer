@@ -15,9 +15,13 @@ using namespace std;
 
 #include "vec3.h"
 
+#define ONE_PI 3.141592654
+#define HALF_PI (ONE_PI / 2)
+#define TWO_PI (ONE_PI * 2)
+
 inline float ffmin(float a, float b) { return a < b ? a : b; }
 inline float ffmax(float a, float b) { return a > b ? a : b; }
-
+inline float clamp(float v, float min, float max) { return ffmax(ffmin(v, max), min); }
 
 bool savePPM(const char* filename, int w, int h, unsigned char* data)
 {

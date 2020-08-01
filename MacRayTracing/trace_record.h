@@ -12,6 +12,7 @@ public:
 	vec3 position;
 	vec3 normal;
 	shared_ptr<material> mat;
+	vec3 texcoord;
 };
 
 #endif

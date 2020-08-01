@@ -256,57 +256,83 @@ public:
 	vec3 size;
 };
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 class image_texture : public texture {
 public:
-	const static int bytes_per_pixel = 3;
-
 	image_texture()
-		: data(nullptr), width(0), height(0), bytes_per_scanline(0) {}
-
-	image_texture(const char* filename) {
-		auto components_per_pixel = bytes_per_pixel;
-
-		data = stbi_load(
-			filename, &width, &height, &components_per_pixel, components_per_pixel);
-
-		if (!data) {
-			std::cerr << "ERROR: Could not load texture image file '" << filename << "'.\n";
-			width = height = 0;
-		}
-
-		bytes_per_scanline = bytes_per_pixel * width;
+	: width(0)
+	, height(0)
+	{
 	}
 
 	~image_texture() {
-		delete data;
 	}
 
-	virtual color value(double u, double v, const vec3& p) const override {
-		// If we have no texture data, then return solid cyan as a debugging aid.
-		if (data == nullptr)
-			return color(0, 1, 1);
+	bool load(const char* filename)
+	{
+		auto components_per_pixel = 3;
 
+		unsigned char* rawdata = stbi_load(filename, &width, &height, &components_per_pixel, components_per_pixel);
+		if (!rawdata)
+		{
+			std::cerr << "ERROR: Could not load texture image file '" << filename << "'.\n";
+			width = height = 0;
+			return false;
+		}
+
+		buffer.resize(width * height);
+		for (int i = 0; i < width * height; i++)
+		{
+			int idx = i * 3;
+
+			buffer[i][0] = float(rawdata[idx + 0]) / 255;
+			buffer[i][1] = float(rawdata[idx + 1]) / 255;
+			buffer[i][2] = float(rawdata[idx + 2]) / 255;
+		}
+
+		delete rawdata;
+
+		return true;
+	}
+
+	void texcoord_clamp(float& i, float& j) const
+	{
+		i = clamp(i, 0, 1);
+		j = clamp(j, 0, 1);
+	}
+
+	void texcoord_repeat(float& i, float& j) const
+	{
+		i = fmod(i, 1);
+		j = fmod(j, 1);
+	}
+
+	void texcoord_repeat_mirror(float& i, float& j) const
+	{
+		i = fmod(i, 2);
+		j = fmod(j, 2);
+
+		i = (i < 1) ? i : 2 - i;
+		j = (j < 1) ? j : 2 - j;
+	}
+
+	virtual vec3 sample(float u, float v, const vec3& p) const
+	{
 		// Clamp input texture coordinates to [0,1] x [1,0]
 		u = clamp(u, 0.0, 1.0);
 		v = 1.0 - clamp(v, 0.0, 1.0);  // Flip V to image coordinates
 
-		auto i = static_cast<int>(u * width);
-		auto j = static_cast<int>(v * height);
+		texcoord_clamp(u, v);
 
-		// Clamp integer mapping, since actual coordinates should be less than 1.0
-		if (i >= width)  i = width - 1;
-		if (j >= height) j = height - 1;
-
-		const auto color_scale = 1.0 / 255.0;
-		auto pixel = data + j * bytes_per_scanline + i * bytes_per_pixel;
-
-		return color(color_scale * pixel[0], color_scale * pixel[1], color_scale * pixel[2]);
+		int i = u * (width - 1);
+		int j = v * (height - 1);
+		return buffer[j * width + i];
 	}
-
 private:
-	unsigned char* data;
+	vector<vec3> buffer;
 	int width, height;
-	int bytes_per_scanline;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

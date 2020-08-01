@@ -179,7 +179,13 @@ shared_ptr<world3> scene2(camera3& camera, float aspect_ratio, int lamberts, int
             vec3 velocity = vec3(random(), random(), random()) * 0.0f;
             if (material_sel <= ratio0) // lambertian
             {
-                auto lambertian_mat = make_shared<lambertian>(make_shared<const_texture>(vec3(random(), random(), random())));
+                auto lambertian_mat = make_shared<lambertian>
+                (
+                    make_shared<const_texture>
+                    (
+                        vec3(random(), random(), random())                            
+                    )
+                );
                 
                 objects.push_back
                 (
@@ -188,7 +194,16 @@ shared_ptr<world3> scene2(camera3& camera, float aspect_ratio, int lamberts, int
             }
             else if (material_sel <= ratio1) // metal
             {
-                auto metal_mat = make_shared<metal>(vec3(0.5 + 0.5 * random(), 0.5 + 0.5 * random(), 0.5 + 0.5 * random()), random() * 0.5);
+                auto metal_mat = make_shared<metal>
+                (
+                    vec3
+                    (
+                        0.5 + 0.5 * random(), 
+                        0.5 + 0.5 * random(), 
+                        0.5 + 0.5 * random()
+                    ),
+                    random() * 0.5
+                );
                 objects.push_back
                 (
                     make_shared<sphere3>(center, radius, metal_mat, velocity)
@@ -196,7 +211,16 @@ shared_ptr<world3> scene2(camera3& camera, float aspect_ratio, int lamberts, int
             }
             else if (material_sel <= ratio2) // dielectric
             {
-                auto dielectric_mat = make_shared<dielectric>(vec3(1, 1, 1), 1.5);
+                auto dielectric_mat = make_shared<dielectric>
+                (
+                    vec3
+                    (
+                        1, 
+                        1, 
+                        1
+                    ), 
+                    1.5
+                );
                 objects.push_back
                 (
                     make_shared<sphere3>(center, radius, dielectric_mat, velocity)
@@ -240,11 +264,17 @@ shared_ptr<world3> scene3(camera3& camera, float aspect_ratio)
     auto aperture = 0.0;
     camera = camera3(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus, 0, 1.0f);
 
-    shared_ptr<noise_texture> perlintex = make_shared<noise_texture>(5);
+    shared_ptr<noise_texture> perlin_tex = make_shared<noise_texture>(5);
+    shared_ptr<image_texture> image_tex = make_shared<image_texture>();
+    if (!image_tex->load("earthmap.jpg"))
+        return nullptr;
 
     vector<shared_ptr<object3>> objects;
-    objects.push_back(make_shared<sphere3>(vec3(0, -1000, 0), 1000, make_shared<lambertian>(perlintex)));
-    objects.push_back(make_shared<sphere3>(vec3(0, 2, 0), 2, make_shared<lambertian>(perlintex)));
+    objects.push_back(make_shared<sphere3>(vec3(0, -1000, 0), 1000, make_shared<lambertian>(perlin_tex)));
+    objects.push_back(make_shared<sphere3>(vec3(0, 2, 0), 2, make_shared<lambertian>(perlin_tex)));
+    // objects.push_back(make_shared<sphere3>(vec3(3, 1, -2), 0.9, make_shared<lambertian>(const_tex)));
+    // objects.push_back(make_shared<sphere3>(vec3(3, 1, 0), 0.9, make_shared<metal>(vec3(0.8, 0.8, 0.8))));
+//     objects.push_back(make_shared<sphere3>(vec3(3, 1, 2), 0.9, make_shared<dielectric>(vec3(0.8, 0.8, 0.8), 1.5)));
 
     objects.push_back
     (
@@ -258,9 +288,9 @@ int raytrace()
 {
     // Image Parameter
     const auto aspect_ratio = 16.0 / 9.0;
-    const int image_width = 400;
+    const int image_width = 200;
     const int image_height = static_cast<int>(image_width / aspect_ratio);
-    const int samples_per_pixel = 128;
+    const int samples_per_pixel = 64;
     const int max_depth = 50;
 
     bitmap bmp(image_width, image_height);
@@ -268,8 +298,8 @@ int raytrace()
     // world & camera
     camera3 camera;
     //shared_ptr<world3> world = scene1(camera, aspect_ratio);
-    // shared_ptr<world3> world = scene2(camera, aspect_ratio, 4, 4, 2);
-    shared_ptr<world3> world = scene3(camera, aspect_ratio);
+    shared_ptr<world3> world = scene2(camera, aspect_ratio, 4, 4, 2);
+    //shared_ptr<world3> world = scene3(camera, aspect_ratio);
 
     for (int j = 0; j < image_height; j++)
     {

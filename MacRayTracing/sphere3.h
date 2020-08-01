@@ -17,6 +17,16 @@ public:
 		this->velocity = velocity;
 	}
 
+	void getUV(const vec3& p, vec3& texcoord) const
+	{
+		float phi = atan2(p.z(), p.x());
+		float theta = asin(p.y());
+
+		texcoord[0] = 1 - (phi + ONE_PI) / (TWO_PI);
+		texcoord[1] = (theta + HALF_PI) / (ONE_PI);
+		texcoord[2] = 1.0f;
+	}
+
 	virtual bool trace(const ray3& r, float t_min, float t_max, trace_record& rec) const
 	{
 		vec3 centert = getCenter(r.time());
@@ -35,6 +45,7 @@ public:
 				rec.position = r.point_at_parameter(rec.t);
 				rec.normal = (rec.position - centert) / radius;
 				rec.mat = mat;
+				getUV((rec.position - centert) / radius, rec.texcoord);
 				return true;
 			}
 
@@ -45,6 +56,7 @@ public:
 				rec.position = r.point_at_parameter(rec.t);
 				rec.normal = (rec.position - centert) / radius;
 				rec.mat = mat;
+				getUV((rec.position - centert) / radius, rec.texcoord);
 				return true;
 			}
 		}

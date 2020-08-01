@@ -157,6 +157,7 @@
     <ClInclude Include="object3.h" />
     <ClInclude Include="ray3.h" />
     <ClInclude Include="sphere3.h" />
+    <ClInclude Include="stb_image.h" />
     <ClInclude Include="trace_record.h" />
     <ClInclude Include="util.h" />
     <ClInclude Include="vec3.h" />
