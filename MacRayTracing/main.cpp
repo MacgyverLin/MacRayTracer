@@ -90,28 +90,35 @@ vec3 color3(const world3& world, const ray3& r, int depth)
         ray3 scattered;
         vec3 atteunation;
 
+        vec3 emitted = record.mat->emit(0, 0, record.position);
         if (depth > 0 && record.mat->scatter(r, record, atteunation, scattered))
         {
-            return atteunation * color3(world, scattered, depth - 1);
+            return emitted + atteunation * color3(world, scattered, depth - 1);
         }
         else
-            return vec3(0, 0, 0);
+        {
+            //return emitted;
+            return vec3(0.0, 0.0, 0.0);
+        }
     }
     else
     {
+        //return vec3(0.0, 0.0, 0.0);
         vec3 unit_direction = unit_vector(r.direction());
         float t = 0.5 * (unit_direction.y() + 1.0);
         return vec3(1.0, 1.0, 1.0) * (1.0 - t) + vec3(0.5, 0.7, 1.0) * t;
     }
 }
 
-vec3 gamma_correction(const vec3& c, float gamma)
+shared_ptr<world3> scene1(camera3& camera, float aspect_ratio)
 {
-    return vec3(pow(c[0], gamma), pow(c[1], gamma), pow(c[2], gamma));
-}
+    vec3 lookfrom(13, 2, 3);
+    vec3 lookat(0, 0, 0);
+    vec3 vup(0, 1, 0);
+    auto dist_to_focus = 10.0;
+    auto aperture = 0.1;
+    camera = camera3(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus, 0, 1.0f / 60.0f * 3);
 
-shared_ptr<world3> scene1()
-{
     vector<shared_ptr<object3>> objects;
     objects.push_back(make_shared<sphere3>(vec3( 0, -100.5, -1),   100, make_shared<lambertian>(make_shared<const_texture>(vec3(0.8, 0.8, 0.0)))));
     objects.push_back(make_shared<sphere3>(vec3( 1,      0, -1),   0.5, make_shared<metal>(vec3(0.8, 0.6, 0.2))));
@@ -119,11 +126,27 @@ shared_ptr<world3> scene1()
     objects.push_back(make_shared<sphere3>(vec3(-1,      0, -1), -0.49, make_shared<dielectric>(vec3(1.0, 1.0, 1.0), 1.5)));
     objects.push_back(make_shared<sphere3>(vec3( 0,      0, -1),   0.5, make_shared<lambertian>(make_shared<const_texture>(vec3(0.1, 0.2, 0.5)))));
 
+    objects.push_back
+    (
+        make_shared<sphere3>(vec3(0, 8, 0), 5.0, make_shared<light>(vec3(30.0, 30.0, 30.0)))
+    );
+
     return make_shared<world3>(objects);
 }
 
-shared_ptr<world3> scene2(int lamberts, int metals, int glasses)
+shared_ptr<world3> scene2(camera3& camera, float aspect_ratio, int lamberts, int metals, int glasses)
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////
+    // camera
+    vec3 lookfrom(13, 2, 3);
+    vec3 lookat(0, 0, 0);
+    vec3 vup(0, 1, 0);
+    auto dist_to_focus = 10.0;
+    auto aperture = 0.1;
+    camera = camera3(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus, 0, 1.0f / 60.0f * 3);
+
+    /////////////////////////////////////////////////////////////////////////////////////////////
+    // world
     vector<shared_ptr<object3>> objects;
 
     float total = lamberts + metals + glasses;
@@ -136,8 +159,8 @@ shared_ptr<world3> scene2(int lamberts, int metals, int glasses)
         make_shared<checker_texture>
         (
             make_shared<const_texture>(vec3(0.2, 0.3, 0.1)),
-            make_shared<const_texture>(vec3(0.9, 0.9, 0.9)), 
-            vec3(0.4, 0.4, 0.4)
+            make_shared<noise_texture>(),
+            vec3(10.0, 10.0, 10.0)
         )
     );
     objects.push_back
@@ -153,11 +176,10 @@ shared_ptr<world3> scene2(int lamberts, int metals, int glasses)
             
             float radius = 0.2;// +random() * 0.1;
             vec3 center(x + random() * - 0.5, radius, z + random() * - 0.5);
-            vec3 velocity(random() * 3, random() * 3, random() * 3);            
+            vec3 velocity = vec3(random(), random(), random()) * 0.0f;
             if (material_sel <= ratio0) // lambertian
             {
-                // auto lambertian_mat = make_shared<lambertian>(make_shared<const_texture>(vec3(random(), random(), random())));
-                auto lambertian_mat = make_shared<lambertian>(make_shared<perlin_noise_texture>(vec3(random(), random(), random())));
+                auto lambertian_mat = make_shared<lambertian>(make_shared<const_texture>(vec3(random(), random(), random())));
                 
                 objects.push_back
                 (
@@ -196,6 +218,39 @@ shared_ptr<world3> scene2(int lamberts, int metals, int glasses)
         make_shared<sphere3>(vec3( 6, 1, 0), 1.0, make_shared<metal>(vec3(0.7, 0.6, 0.5), 0.0))
     );
 
+    objects.push_back
+    (
+        make_shared<sphere3>(vec3( 6, 4.5, 0), 2.0, make_shared<light>(vec3(0.0, 30.0, 30.0)))
+    );
+
+    objects.push_back
+    (
+        make_shared<sphere3>(vec3(-6, 8, 0), 5.0, make_shared<light>(vec3(30.0, 30.0, 30.0)))
+    );
+
+    return make_shared<world3>(objects);
+}
+
+shared_ptr<world3> scene3(camera3& camera, float aspect_ratio)
+{
+    vec3 lookfrom(13, 2, 3);
+    vec3 lookat(0, 0, 0);
+    vec3 vup(0, 1, 0);
+    auto dist_to_focus = 10.0;
+    auto aperture = 0.0;
+    camera = camera3(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus, 0, 1.0f);
+
+    shared_ptr<noise_texture> perlintex = make_shared<noise_texture>(5);
+
+    vector<shared_ptr<object3>> objects;
+    objects.push_back(make_shared<sphere3>(vec3(0, -1000, 0), 1000, make_shared<lambertian>(perlintex)));
+    objects.push_back(make_shared<sphere3>(vec3(0, 2, 0), 2, make_shared<lambertian>(perlintex)));
+
+    objects.push_back
+    (
+        make_shared<sphere3>(vec3(0, 8, 0), 5.0, make_shared<light>(vec3(30.0, 30.0, 30.0)))
+    );
+
     return make_shared<world3>(objects);
 }
 
@@ -203,24 +258,18 @@ int raytrace()
 {
     // Image Parameter
     const auto aspect_ratio = 16.0 / 9.0;
-    const int image_width = 800;
+    const int image_width = 400;
     const int image_height = static_cast<int>(image_width / aspect_ratio);
-    const int samples_per_pixel = 32;
+    const int samples_per_pixel = 128;
     const int max_depth = 50;
 
     bitmap bmp(image_width, image_height);
 
-    // world
-    // shared_ptr<world3> world = scene1();
-    shared_ptr<world3> world = scene2(4, 4, 2);
-
-    // camera
-    vec3 lookfrom(13, 2, 3);
-    vec3 lookat(0, 0, 0);
-    vec3 vup(0, 1, 0);
-    auto dist_to_focus = 10.0;
-    auto aperture = 0.1;
-    camera3 camera(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus, 0, 1.0f / 60.0f * 3);
+    // world & camera
+    camera3 camera;
+    //shared_ptr<world3> world = scene1(camera, aspect_ratio);
+    // shared_ptr<world3> world = scene2(camera, aspect_ratio, 4, 4, 2);
+    shared_ptr<world3> world = scene3(camera, aspect_ratio);
 
     for (int j = 0; j < image_height; j++)
     {
@@ -237,13 +286,14 @@ int raytrace()
             }
 
             color /= samples_per_pixel;
-            color = gamma_correction(color, 1.0 / 2.2f);
 
-            bmp.setPixel(i, j, floor(255 * color[0]), floor(255 * color[1]), floor(255 * color[2]));
+            bmp.setPixel(i, j, color);
         }
         cout << "line:" << j << endl;
     }
 
+    bmp.tonemap();
+    bmp.gamma_correction(1.0 / 2.2f);
     bmp.saveBMP("1.bmp");
     bmp.savePPM("1.ppm");
 

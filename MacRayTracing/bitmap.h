@@ -10,26 +10,99 @@ public:
 	{
 		this->w = w;
 		this->h = h;
-		this->buffer = new unsigned char[w * h * 3];
+		this->buffer.resize(w * h);
 	}
 
 	~bitmap()
 	{
-		if (buffer)
-		{
-			delete[] buffer;
-			buffer = nullptr;
-		}
 	}
 
-	void setPixel(int x, int y, unsigned char r, unsigned char g, unsigned char b)
+    bitmap(const bitmap& other)
+    {
+        this->w = other.w;
+        this->h = other.h;
+        this->buffer = other.buffer;
+    }
+
+    bitmap& operator=(const bitmap& other)
+    {
+        this->w = other.w;
+        this->h = other.h;
+        this->buffer = other.buffer;
+
+        return *this;
+    }
+
+    bitmap& operator+=(const bitmap& other)
+    {
+        this->w = other.w;
+        this->h = other.h;
+        this->buffer = other.buffer;
+
+        return *this;
+    }
+
+	void setPixel(int x, int y, const vec3& c)
 	{
-		unsigned char* ptr = buffer + (y * w + x) * 3;
-
-		*ptr++ = b;
-		*ptr++ = g;
-		*ptr++ = r;
+        buffer[y * w + x] = c;
 	}
+
+    vec3 maxBrightness()
+    {
+        vec3 max(0, 0, 0);
+        for (int i = 0; i < w * h; i++)
+        {
+            for (int k = 0; k < 3; k++)
+            {
+                if (max[k] < buffer[i][k])
+                    max[k] = buffer[i][k];
+            }
+        }
+
+        return max;
+    }
+
+    void tonemap()
+    {
+        vec3 max = maxBrightness();
+
+        for (int i = 0; i < w * h; i++)
+        {
+            buffer[i] /= max;
+
+            //buffer[i][0] = log(buffer[i][0] + 1) / log(max[0] + 1);
+            //buffer[i][1] = log(buffer[i][1] + 1) / log(max[1] + 1);
+            //buffer[i][2] = log(buffer[i][2] + 1) / log(max[2] + 1);
+        }
+    }
+
+    bitmap scale()
+    {
+        bitmap result(w/2, h/2);
+
+        for (int j = 0; j < h; j+=2)
+        {
+            vec3* ptr0 = &buffer[w * j];
+            vec3* ptr1 = ptr0 + w;
+            for (int i = 0; i < w; i+=2)
+            {
+                vec3 c = (*ptr0 + *(ptr0 + 1) + *ptr1 + *(ptr1 + 1)) / 4;
+                result.setPixel(i >> 1, j >> 1, c);
+            }
+        }
+
+        return result;
+    }
+
+    void gamma_correction(float gamma)
+    {
+        for (int i = 0; i < w * h; i++)
+        {
+            buffer[i][0] = pow(buffer[i][0], gamma);
+            buffer[i][1] = pow(buffer[i][1], gamma);
+            buffer[i][2] = pow(buffer[i][2], gamma);
+        }
+    }
 
     bool savePPM(const char* filename)
     {
@@ -41,15 +114,17 @@ public:
         fprintf(f, "%d %d\n", w, h);
         fprintf(f, "255\n");
 
+        unsigned char c[3];
         for (int j = 0; j < h; j++)
         {
-            unsigned char* ptr = buffer + w * (h - 1 - j) * 3;
+            vec3* ptr = &buffer[w * (h - 1 - j)];
             for (int i = 0; i < w; i++)
             {
-                unsigned char b = *ptr++;
-                unsigned char g = *ptr++;
-                unsigned char r = *ptr++;
-                fprintf(f, "%d %d %d\n", r, g, b);
+                c[0] = floor(255 * ptr->x());
+                c[1] = floor(255 * ptr->y());
+                c[2] = floor(255 * ptr->z());
+                ptr++;
+                fprintf(f, "%d %d %d\n", c[0], c[1], c[2]);
             }
         }
         fclose(f);
@@ -102,14 +177,27 @@ public:
             return false;
 
         fwrite(header, 1, 54, f);
-        fwrite(buffer, 1, imagesize, f);
+
+        unsigned char c[3];
+        for (int j = 0; j < h; j++)
+        {
+            vec3* ptr = &buffer[w * j];
+            for (int i = 0; i < w; i++)
+            {
+                c[2] = floor(255 * ptr->x());
+                c[1] = floor(255 * ptr->y());
+                c[0] = floor(255 * ptr->z());
+                ptr++;
+                fwrite(c, sizeof(c[0]), 3, f);
+            }
+        }
         fclose(f);
 
         return true;
     }
 
 
-	unsigned char* buffer;
+	vector<vec3> buffer;
 	int w;
 	int h;
 };

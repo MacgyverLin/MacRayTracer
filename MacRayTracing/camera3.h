@@ -7,6 +7,10 @@
 class camera3
 {
 public:
+    camera3()
+    {
+    }
+
     camera3(vec3 from, vec3 at, vec3 up, float vfov, float aspect, float aperture, float focus_dist, float t0, float t1)
     {
         float theta = vfov / 180.0f * 3.141592654;

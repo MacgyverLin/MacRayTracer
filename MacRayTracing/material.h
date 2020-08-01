@@ -33,6 +33,13 @@ public:
 class perlin
 {
 public:
+	static bool inited;
+	static vec3 randomvec3[256];
+	static int perm_x[256];
+	static int perm_y[256];
+	static int perm_z[256];
+
+public:
 	perlin()
 	{
 		if (!inited)
@@ -46,24 +53,19 @@ public:
 		}
 	}
 
-	float sample(const vec3& p) const
-	{
-		float u = p.x() - floor(p.x());
-		float v = p.y() - floor(p.y());
-		float w = p.z() - floor(p.z());
-
-		int i = int(4 * p.x()) & 255;
-		int j = int(4 * p.y()) & 255;
-		int k = int(4 * p.z()) & 255;
-
-		return ranfloat[perm_x[i] ^ perm_y[j] ^ perm_z[k]];
-	}
-
 	static void perlin_generate()
 	{
 		for (int i = 0; i < 256; i++)
 		{
-			ranfloat[i] = random();
+			randomvec3[i] = unit_vector
+			(
+				vec3
+				(
+					-1 + 2 * random(),
+					-1 + 2 * random(),
+					-1 + 2 * random()
+				)
+			);
 		}
 	}
 
@@ -86,33 +88,143 @@ public:
 		permute(p, 256);
 	}
 
-	static bool inited;
-	static float ranfloat[256];
-	static int perm_x[256];
-	static int perm_y[256];
-	static int perm_z[256];
+	//////////////////////////////////////////////////////////////
+	float linear_interp(const vec3& p) const
+	{
+		float u = p.x() - floor(p.x());
+		float v = p.y() - floor(p.y());
+		float w = p.z() - floor(p.z());
+		int i = floor(p.x());
+		int j = floor(p.y());
+		int k = floor(p.z());
+
+		vec3 c[2][2][2];
+		for (int di = 0; di < 2; di++)
+		{
+			for (int dj = 0; dj < 2; dj++)
+			{
+				for (int dk = 0; dk < 2; dk++)
+				{
+					c[di][dj][dk] = randomvec3[perm_x[(i + di) & 255] ^ perm_y[(j + dj) & 255] ^ perm_z[(k + dk) & 255]];
+				}
+			}
+		}
+
+		/////////////////////////////////////////////////////
+		float accum = 0;
+		for (int i = 0; i < 2; i++)
+		{
+			for (int j = 0; j < 2; j++)
+			{
+				for (int k = 0; k < 2; k++)
+				{
+					vec3 weight(u - i, v - j, w - k);
+					accum +=
+						((i * u) + (1 - i) * (1 - u)) *
+						((j * v) + (1 - j) * (1 - v)) *
+						((k * w) + (1 - k) * (1 - w)) *
+						dot(c[i][j][k], weight);
+				}
+			}
+		}
+
+		return accum;
+	}
+
+	float cubic_interp(const vec3& p) const
+	{
+		float u = p.x() - floor(p.x());
+		float v = p.y() - floor(p.y());
+		float w = p.z() - floor(p.z());
+		int i = floor(p.x());
+		int j = floor(p.y());
+		int k = floor(p.z());
+
+		vec3 c[2][2][2];
+		for (int di = 0; di < 2; di++)
+		{
+			for (int dj = 0; dj < 2; dj++)
+			{
+				for (int dk = 0; dk < 2; dk++)
+				{
+					c[di][dj][dk] = randomvec3[perm_x[(i + di) & 255] ^ perm_y[(j + dj) & 255] ^ perm_z[(k + dk) & 255]];
+				}
+			}
+		}
+
+		/////////////////////////////////////////////////////
+		float uu = u * u * (3 - 2 * u);
+		float vv = v * v * (3 - 2 * v);
+		float ww = w * w * (3 - 2 * w);
+		float accum = 0;
+		for (int i = 0; i < 2; i++)
+		{
+			for (int j = 0; j < 2; j++)
+			{
+				for (int k = 0; k < 2; k++)
+				{
+					vec3 weight(u - i, v - j, w - k);
+					accum +=
+						((i * uu) + (1 - i) * (1 - uu)) *
+						((j * vv) + (1 - j) * (1 - vv)) *
+						((k * ww) + (1 - k) * (1 - ww)) *
+						dot(c[i][j][k], weight);
+				}
+			}
+		}
+
+		return accum;
+	}
+
+	float value(const vec3& p, int filtering = 0) const
+	{
+		if (filtering == 0)
+			return cubic_interp(p);
+		else
+			return linear_interp(p);
+	}
+
+	float turbulance(const vec3& p, int depth = 7) const
+	{
+		float accum = 0;
+		vec3 next_position = p;
+		float next_weight = 1;
+		for (int i = 0; i < depth; i++)
+		{
+			accum += next_weight * value(next_position);
+			next_weight *= 0.5;
+			next_position *= 2;
+		}
+
+		return fabs(accum);
+	}
 };
 
 bool perlin::inited = false;
-float perlin::ranfloat[256];
+vec3 perlin::randomvec3[256];
 int perlin::perm_x[256];
 int perlin::perm_y[256];
 int perlin::perm_z[256];
 
-class perlin_noise_texture : public texture
+class noise_texture : public texture
 {
 public:
-	perlin_noise_texture(const vec3& color_ = vec3(1, 1, 1))
-	: color(color_)
+	noise_texture(float scale_ = 4.0)
+	: noise()
+	, scale(scale_)
 	{
 	}
 
 	virtual vec3 sample(float u, float v, const vec3& p) const
 	{
-		return vec3(1, 1, 1) * noise.sample(p);
+		//return vec3(1, 1, 1) * 0.5 * (1 + noise.value(p * scale));
+		//return vec3(1, 1, 1) * noise.value(p * scale);
+		// return vec3(1, 1, 1) * 0.5 * (1 + noise.turbulance(p * scale));
+		//return vec3(1, 1, 1) * noise.turbulance(p * scale);
+		return vec3(1, 1, 1) * 0.5 * (1 + sin(scale*p.z() + 10 * noise.turbulance(p)));
 	}
 
-	vec3 color;
+	float scale;
 	perlin noise;
 };
 
@@ -144,6 +256,59 @@ public:
 	vec3 size;
 };
 
+class image_texture : public texture {
+public:
+	const static int bytes_per_pixel = 3;
+
+	image_texture()
+		: data(nullptr), width(0), height(0), bytes_per_scanline(0) {}
+
+	image_texture(const char* filename) {
+		auto components_per_pixel = bytes_per_pixel;
+
+		data = stbi_load(
+			filename, &width, &height, &components_per_pixel, components_per_pixel);
+
+		if (!data) {
+			std::cerr << "ERROR: Could not load texture image file '" << filename << "'.\n";
+			width = height = 0;
+		}
+
+		bytes_per_scanline = bytes_per_pixel * width;
+	}
+
+	~image_texture() {
+		delete data;
+	}
+
+	virtual color value(double u, double v, const vec3& p) const override {
+		// If we have no texture data, then return solid cyan as a debugging aid.
+		if (data == nullptr)
+			return color(0, 1, 1);
+
+		// Clamp input texture coordinates to [0,1] x [1,0]
+		u = clamp(u, 0.0, 1.0);
+		v = 1.0 - clamp(v, 0.0, 1.0);  // Flip V to image coordinates
+
+		auto i = static_cast<int>(u * width);
+		auto j = static_cast<int>(v * height);
+
+		// Clamp integer mapping, since actual coordinates should be less than 1.0
+		if (i >= width)  i = width - 1;
+		if (j >= height) j = height - 1;
+
+		const auto color_scale = 1.0 / 255.0;
+		auto pixel = data + j * bytes_per_scanline + i * bytes_per_pixel;
+
+		return color(color_scale * pixel[0], color_scale * pixel[1], color_scale * pixel[2]);
+	}
+
+private:
+	unsigned char* data;
+	int width, height;
+	int bytes_per_scanline;
+};
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 class material
 {
@@ -153,6 +318,8 @@ public:
 	}
 
 	virtual bool scatter(const ray3& in, const trace_record& record, vec3& atteunation, ray3& scattered) const = 0;
+
+	virtual vec3 emit(float u, float v, const vec3& p) const = 0;
 };
 
 class lambertian : public material
@@ -172,6 +339,11 @@ public:
 		atteunation = albedo->sample(0, 0, record.position);
 
 		return true;
+	}
+
+	virtual vec3 emit(float u, float v, const vec3& p) const
+	{
+		return vec3(0, 0, 0);
 	}
 
 	shared_ptr<texture> albedo;
@@ -198,6 +370,11 @@ public:
 		atteunation = albedo;
 		
 		return dot(scattered.direction(), record.normal)>0;
+	}
+
+	virtual vec3 emit(float u, float v, const vec3& p) const
+	{
+		return vec3(0, 0, 0);
 	}
 
 	vec3 albedo;
@@ -312,9 +489,63 @@ public:
 		return scatter2(in, record, atteunation, scattered);
 	}
 
+	virtual vec3 emit(float u, float v, const vec3& p) const
+	{
+		return vec3(0, 0, 0);
+	}
+
 	vec3 albedo;
 	float ior;
 };
 
+class light : public material
+{
+public:
+	light(const vec3& color_)
+	{
+		color = color_;
+	}
+
+	virtual bool scatter(const ray3& in, const trace_record& record, vec3& atteunation, ray3& scattered) const
+	{
+		return false;
+	}
+
+	virtual vec3 emit(float u, float v, const vec3& p) const
+	{
+		return color;
+	}
+
+	vec3 color;
+	/*
+	light(shared_ptr<texture> color)
+	{
+		this->color = color;
+	}
+	shared_ptr<texture> color;
+	*/
+
+};
+
+class light_texture : public material
+{
+public:
+	light_texture(shared_ptr<texture> color)
+	{
+		this->color = color;
+	}
+
+	virtual bool scatter(const ray3& in, const trace_record& record, vec3& atteunation, ray3& scattered) const
+	{
+		return false;
+	}
+
+	virtual vec3 emit(float u, float v, const vec3& p) const
+	{
+		return color->sample(u, v, p);
+	}
+
+	shared_ptr<texture> color;
+};
 
 #endif
