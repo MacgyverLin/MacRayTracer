@@ -76,6 +76,16 @@ public:
         }
     }
 
+    void tonemap2(float A, float gamma)
+    {
+        for (int i = 0; i < w * h; i++)
+        {
+            buffer[i][0] = A * pow(buffer[i][0], gamma);
+            buffer[i][1] = A * pow(buffer[i][1], gamma);
+            buffer[i][2] = A * pow(buffer[i][2], gamma);
+        }
+    }
+
     bitmap scale()
     {
         bitmap result(w/2, h/2);
@@ -184,9 +194,10 @@ public:
             vec3* ptr = &buffer[w * j];
             for (int i = 0; i < w; i++)
             {
-                c[2] = floor(255 * ptr->x());
-                c[1] = floor(255 * ptr->y());
-                c[0] = floor(255 * ptr->z());
+                c[2] = floor(255 * ffclamp(ptr->x(), 0, 1));
+                c[1] = floor(255 * ffclamp(ptr->y(), 0, 1));
+                c[0] = floor(255 * ffclamp(ptr->z(), 0, 1));
+
                 ptr++;
                 fwrite(c, sizeof(c[0]), 3, f);
             }

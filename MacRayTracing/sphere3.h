@@ -6,15 +6,17 @@
 #include "aabb3.h"
 #include "util.h"
 
-class sphere3 : public object3
+class sphere3 : public traceable3
 {
 public:
 	sphere3(const vec3& center, float radius, shared_ptr<material> mat, const vec3& velocity = vec3(0, 0, 0))
-	: object3(mat)
+	: traceable3()
 	{
 		this->center = center;
 		this->radius = radius;
 		this->velocity = velocity;
+
+		this->mat = mat;
 	}
 
 	void getUV(const vec3& p, vec3& texcoord) const
@@ -103,6 +105,8 @@ public:
 	vec3 center;
 	float radius;
 	vec3 velocity;
+
+	shared_ptr<material> mat;
 };
 
 #endif

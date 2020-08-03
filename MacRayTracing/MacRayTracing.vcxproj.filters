@@ -59,5 +59,14 @@
     <ClInclude Include="texture.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="rect3.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="box3.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mat4.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

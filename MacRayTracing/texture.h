@@ -298,8 +298,8 @@ public:
 
 	void texcoord_clamp(float& i, float& j) const
 	{
-		i = clamp(i, 0, 1);
-		j = clamp(j, 0, 1);
+		i = ffclamp(i, 0, 1);
+		j = ffclamp(j, 0, 1);
 	}
 
 	void texcoord_repeat(float& i, float& j) const
@@ -320,8 +320,8 @@ public:
 	virtual vec3 sample(float u, float v, const vec3& p) const
 	{
 		// Clamp input texture coordinates to [0,1] x [1,0]
-		u = clamp(u, 0.0, 1.0);
-		v = 1.0 - clamp(v, 0.0, 1.0);  // Flip V to image coordinates
+		u = ffclamp(u, 0.0, 1.0);
+		v = 1.0 - ffclamp(v, 0.0, 1.0);  // Flip V to image coordinates
 
 		texcoord_clamp(u, v);
 

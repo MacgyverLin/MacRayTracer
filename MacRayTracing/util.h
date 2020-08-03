@@ -19,9 +19,12 @@ using namespace std;
 #define HALF_PI (ONE_PI / 2)
 #define TWO_PI (ONE_PI * 2)
 
+#define DEG2RAD(r) ((r)*ONE_PI/180.0)
+#define RAD2DEG(r) ((r)*180.0/ONE_PI)
+
 inline float ffmin(float a, float b) { return a < b ? a : b; }
 inline float ffmax(float a, float b) { return a > b ? a : b; }
-inline float clamp(float v, float min, float max) { return ffmax(ffmin(v, max), min); }
+inline float ffclamp(float v, float min, float max) { return ffmax(ffmin(v, max), min); }
 
 bool savePPM(const char* filename, int w, int h, unsigned char* data)
 {

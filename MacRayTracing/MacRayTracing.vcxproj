@@ -152,10 +152,13 @@
   <ItemGroup>
     <ClInclude Include="aabb3.h" />
     <ClInclude Include="bitmap.h" />
+    <ClInclude Include="box3.h" />
     <ClInclude Include="camera3.h" />
+    <ClInclude Include="mat4.h" />
     <ClInclude Include="material.h" />
     <ClInclude Include="object3.h" />
     <ClInclude Include="ray3.h" />
+    <ClInclude Include="rect3.h" />
     <ClInclude Include="sphere3.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="texture.h" />

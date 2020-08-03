@@ -137,8 +137,8 @@ public:
 class world3 : public traceable3
 {
 public:
-	world3(const vector<shared_ptr<object3>>& objects_)
-		: objects(objects_)
+	world3(const vector<shared_ptr<traceable3>>& traceables_)
+		: traceables(traceables_)
 	{
 	}
 
@@ -148,7 +148,7 @@ public:
 
 	void clear()
 	{
-		objects.clear();
+		traceables.clear();
 	}
 
 	virtual bool trace(const ray3& r, float t_min, float t_max, trace_record& rec) const
@@ -157,9 +157,9 @@ public:
 		bool hitsomething = false;
 		trace_record temp_rec;
 
-		for (auto& o : objects)
+		for (auto& tracable : traceables)
 		{
-			if (o->trace(r, t_min, closest_t, temp_rec))
+			if (tracable->trace(r, t_min, closest_t, temp_rec))
 			{
 				hitsomething = true;
 				closest_t = temp_rec.t;
@@ -175,7 +175,7 @@ public:
 		return true;
 	}
 
-	vector<shared_ptr<object3>> objects;
+	vector<shared_ptr<traceable3>> traceables;
 };
 
 #endif

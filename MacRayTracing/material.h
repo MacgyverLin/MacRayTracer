@@ -194,10 +194,10 @@ public:
 	float ior;
 };
 
-class light : public material
+class diffuse_light : public material
 {
 public:
-	light(const vec3& color_)
+	diffuse_light(const vec3& color_)
 	{
 		color = color_;
 	}
@@ -213,14 +213,27 @@ public:
 	}
 
 	vec3 color;
-	/*
-	light(shared_ptr<texture> color)
-	{
-		this->color = color;
-	}
-	shared_ptr<texture> color;
-	*/
+};
 
+class diffuse_texlight : public material
+{
+public:
+	diffuse_texlight(shared_ptr<texture> color_)
+	{
+		color = color_;
+	}
+
+	virtual bool scatter(const ray3& in, const trace_record& record, vec3& atteunation, ray3& scattered) const
+	{
+		return false;
+	}
+
+	virtual vec3 emit(float u, float v, const vec3& p) const
+	{
+		return color->sample(u, v, p);
+	}
+
+	shared_ptr<texture> color;
 };
 
 #endif
