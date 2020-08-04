@@ -326,6 +326,10 @@ shared_ptr<world3> scene_cornell_box(camera3& camera, float aspect_ratio)
 	shared_ptr<dielectric> glass_green = make_shared<dielectric>(vec3(0.12, 0.45, 0.15), 1.5);
 	shared_ptr<dielectric> glass_white = make_shared<dielectric>(vec3(0.73, 0.73, 0.73), 1.5);
 
+	shared_ptr<const_texture> texture_red = make_shared<const_texture>(vec3(0.65, 0.05, 0.05));
+	shared_ptr<const_texture> texture_green = make_shared<const_texture>(vec3(0.12, 0.45, 0.15));
+	shared_ptr<const_texture> texture_white = make_shared<const_texture>(vec3(0.73, 0.73, 0.73));
+
 	objects.push_back(make_shared<xz_rect>(555 / 2 - 150, 555 / 2 + 150, 555 / 2 - 150, 555 / 2 + 150, 554, light));
 
 	objects.push_back(make_shared<flip_normal>(make_shared<yz_rect>(0, 555, 0, 555, 555, lambert_green)));
@@ -342,8 +346,10 @@ shared_ptr<world3> scene_cornell_box(camera3& camera, float aspect_ratio)
 	m1.init_translate_rot_zxy_scale(265, 0, 295, 0, 0, 15, 1);
 	objects.push_back(make_shared<transform_node>(make_shared<box3>(vec3(0, 0, 0), vec3(165, 330, 165), lambert_white), m1));
 
-	//objects.push_back(make_shared<sphere3>(vec3(130, 165 + 120, 65), 120, glass_white));
-	//objects.push_back(make_shared<sphere3>(vec3(265, 330 + 120, 295), 120, metal_white));
+	//objects.push_back(make_shared<const_medium>(make_shared<sphere3>(vec3(130, 165 + 480, 65), 480, glass_white), 0.01, texture_red));
+	objects.push_back(make_shared<const_medium>(make_shared<sphere3>(vec3(265, 330 + 480, 295), 480, metal_white), 0.01, texture_green));
+	// objects.push_back(make_shared<sphere3>(vec3(130, 165 + 120, 65), 120, glass_white));
+	// objects.push_back(make_shared<sphere3>(vec3(265, 330 + 120, 295), 120, metal_white));
 	
 	return make_shared<world3>(objects);
 }
@@ -354,7 +360,7 @@ int raytrace()
 	const auto aspect_ratio = 16.0 / 9.0;
 	const int image_width = 400;
 	const int image_height = static_cast<int>(image_width / aspect_ratio);
-	const int samples_per_pixel = 128;
+	const int samples_per_pixel = 2048;
 	const int max_depth = 50;
 
 	bitmap bmp(image_width, image_height);
@@ -400,21 +406,7 @@ int raytrace()
 	return 0;
 }
 
-int main()
-{
-	return raytrace();
-}
-
-
 /*
-monte_carlo2(10000);
-monte_carlo(10);
-monte_carlo(100);
-monte_carlo(1000);
-monte_carlo(10000);
-monte_carlo(20000);
-*/
-
 int monte_carlo(int sqrtN)
 {
 	double inside = 0;
@@ -443,19 +435,102 @@ int monte_carlo(int sqrtN)
 
 	return 0;
 }
+*/
 
-int monte_carlo2(int N)
+int monte_carlo_1d(int N, float (*f)(float x), float (*pdf)(float x), float (*invPDF)(float y))
 {
 	float sum = 0;
 
+	srand(0);
 	for (int i = 0; i < N; i++)
 	{
-		float x = 2 * random();
-		sum += x * x;
+		float x = invPDF(random());
+		sum += f(x) / pdf(x);
 	}
 
-	cout << "-----------------------------" << endl;
-	cout << "I: " << 2 * sum / N << endl;
+	cout << sum / N << endl;
 
 	return 0;
+}
+
+vec3 random_unit_vec3() 
+{
+	auto a = random() * 2 * ONE_PI;
+	auto z = random() * 2 - 1;
+	auto r = sqrt(1 - z * z);
+	return vec3(r * cos(a), r * sin(a), z);
+}
+
+int test_monte_carlo()
+{
+	cout << "uniform_monte_carlo:-----------------------------" << endl;
+	for (int N = 1000; N < 20000; N += 100)
+	{
+		monte_carlo_1d
+		(
+			N,
+			[](float x) -> float
+			{
+				return x * x;
+			},
+			[](float x) -> float
+			{
+				return float(1) / 2;
+			},
+				[](float y) -> float
+			{
+				return 2.0f * y;
+			}
+			);
+	}
+
+	cout << "non-uniform_monte_carlo:-----------------------------" << endl;
+	for (int N = 1000; N < 20000; N += 100)
+	{
+		monte_carlo_1d
+		(
+			N,
+			[](float x) -> float
+			{
+				return x * x;
+			},
+			[](float x) -> float
+			{
+				return x / 2;
+			},
+				[](float y) -> float
+			{
+				return sqrt(4 * y);
+			}
+			);
+	}
+
+	cout << "perfect-uniform_monte_carlo:-----------------------------" << endl;
+	for (int N = 1000; N < 20000; N += 100)
+	{
+		monte_carlo_1d
+		(
+			N,
+			[](float x) -> float
+			{
+				return x * x;
+			},
+			[](float x) -> float
+			{
+				return 3 * x * x / 8;
+			},
+				[](float y) -> float
+			{
+				return 8 * (pow(y, 1.0 / 3.0));
+			}
+			);
+	}
+
+	return -1;
+}
+
+int main()
+{
+	return raytrace();
+	// return test_monte_carlo();
 }

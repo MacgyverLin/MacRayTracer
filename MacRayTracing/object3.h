@@ -85,4 +85,62 @@ public:
 	shared_ptr<traceable3> tracable;
 };
 
+class const_medium : public traceable3
+{
+public:
+	const_medium(shared_ptr<traceable3> tracable_, float density_, shared_ptr<texture> texture_)
+		: traceable3()
+	{
+		this->boundary = tracable_;
+		this->density = density_;
+		this->mat = make_shared<isotropic>(texture_);
+	}
+
+public:
+	virtual bool trace(const ray3& r, float t_min, float t_max, trace_record& rec) const
+	{
+		bool debug = (random() < 0.0001);
+		// debug = false;
+		trace_record rec1, rec2;
+		if (boundary->trace(r, -FLT_MAX, FLT_MAX, rec1))
+		{
+			if (boundary->trace(r, rec1.t+0.00001, FLT_MAX, rec2))
+			{
+				if (rec1.t < t_min)
+				{
+					rec1.t = t_min;
+				}
+				if (rec2.t > t_max)
+				{
+					rec2.t = t_max;
+				}
+				if (rec1.t >= rec2.t)
+					return false;
+				if (rec1.t < 0)
+					rec1.t = 0;
+				float distance_inside_boundary = (rec2.t - rec1.t) * r.direction().length();
+				float hit_distance = -(1.0 / density) * log(random());
+				if (hit_distance < distance_inside_boundary)
+				{
+					rec.t = rec1.t + hit_distance / r.direction().length();
+					rec.position = r.point_at_parameter(rec.t);
+					rec.normal = unit_vector(vec3(random(), random(), random()));
+					rec.mat = mat;
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	virtual bool bounding_box(float t0, float t1, aabb3& box) const
+	{
+		return boundary->bounding_box(t0, t1, box);
+	}
+
+	shared_ptr<traceable3> boundary;
+	float density;
+	shared_ptr<material> mat;
+};
+
 #endif

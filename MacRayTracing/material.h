@@ -49,6 +49,29 @@ public:
 	//shared_ptr<texture> bump;
 };
 
+class isotropic : public material 
+{
+public:
+	isotropic(shared_ptr<texture> albedo_)
+	: albedo(albedo_)
+	{
+	}
+
+	virtual bool scatter(const ray3& in, const trace_record& record, vec3& attenuation, ray3& scattered) const 
+	{
+		scattered = ray3(record.position, random_in_unit_sphere(), in.time());
+		attenuation = albedo->sample(record.texcoord, record.position);
+		return true;
+	}
+
+	virtual vec3 emit(float u, float v, const vec3& p) const
+	{
+		return vec3(0, 0, 0);
+	}
+	
+	shared_ptr<texture> albedo;
+};
+
 class lambertian : public material
 {
 public:
