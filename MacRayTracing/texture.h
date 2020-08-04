@@ -10,7 +10,7 @@ public:
 	{
 	}
 
-	virtual vec3 sample(float u, float v, const vec3& p) const = 0;
+	virtual vec3 sample(const vec3& uvw, const vec3& p) const = 0;
 };
 
 class const_texture : public texture
@@ -21,7 +21,12 @@ public:
 	{
 	}
 
-	virtual vec3 sample(float u, float v, const vec3& p) const
+	const_texture& operator = (const vec3& color_)
+	{
+		color = color_;
+	}
+
+	virtual vec3 sample(const vec3& texcoord, const vec3& position) const
 	{
 		return color;
 	}
@@ -214,13 +219,13 @@ public:
 	{
 	}
 
-	virtual vec3 sample(float u, float v, const vec3& p) const
+	virtual vec3 sample(const vec3& texcoord, const vec3& position) const
 	{
 		//return vec3(1, 1, 1) * 0.5 * (1 + noise.value(p * scale));
 		//return vec3(1, 1, 1) * noise.value(p * scale);
 		// return vec3(1, 1, 1) * 0.5 * (1 + noise.turbulance(p * scale));
 		//return vec3(1, 1, 1) * noise.turbulance(p * scale);
-		return vec3(1, 1, 1) * 0.5 * (1 + sin(scale*p.z() + 10 * noise.turbulance(p)));
+		return vec3(1, 1, 1) * 0.5 * (1 + sin(scale* texcoord.z() + 10 * noise.turbulance(position)));
 	}
 
 	float scale;
@@ -237,16 +242,16 @@ public:
 	{
 	}
 
-	virtual vec3 sample(float u, float v, const vec3& p) const
+	virtual vec3 sample(const vec3& texcoord, const vec3& position) const
 	{
-		float a = sin(p.x() * 3.14 / size.x()) * sin(p.y() * 3.14 / size.y()) * sin(p.z() * 3.14 / size.z());
+		float a = sin(position.x() * 3.14 / size.x()) * sin(position.y() * 3.14 / size.y()) * sin(position.z() * 3.14 / size.z());
 		if (a > 0)
 		{
-			return texture0->sample(u, v, p);
+			return texture0->sample(texcoord, position);
 		}
 		else
 		{
-			return texture1->sample(u, v, p);
+			return texture1->sample(texcoord, position);
 		}
 	}
 
@@ -317,11 +322,11 @@ public:
 		j = (j < 1) ? j : 2 - j;
 	}
 
-	virtual vec3 sample(float u, float v, const vec3& p) const
+	virtual vec3 sample(const vec3& texcoord, const vec3& position) const
 	{
 		// Clamp input texture coordinates to [0,1] x [1,0]
-		u = ffclamp(u, 0.0, 1.0);
-		v = 1.0 - ffclamp(v, 0.0, 1.0);  // Flip V to image coordinates
+		float u = ffclamp(texcoord.x(), 0.0, 1.0);
+		float v = 1.0 - ffclamp(texcoord.y(), 0.0, 1.0);  // Flip V to image coordinates
 
 		texcoord_clamp(u, v);
 

@@ -18,6 +18,37 @@ public:
 	virtual vec3 emit(float u, float v, const vec3& p) const = 0;
 };
 
+class standard : public material
+{
+public:
+	standard(shared_ptr<texture> albedo)//, shared_ptr<texture> bump)
+	{
+		this->albedo = albedo;
+		//this->bump = bump;
+	}
+
+	virtual bool scatter(const ray3& in, const trace_record& record, vec3& atteunation, ray3& scattered) const
+	{
+		// vec3 normal = bump->sample(record.texcoord, record.position);
+
+		vec3 target = record.position + record.normal + random_in_unit_sphere();
+
+		scattered = ray3(record.position, target - record.position, in.time());
+
+		atteunation = albedo->sample(record.texcoord, record.position);		
+
+		return true;
+	}
+
+	virtual vec3 emit(float u, float v, const vec3& p) const
+	{
+		return vec3(0, 0, 0);
+	}
+
+	shared_ptr<texture> albedo;
+	//shared_ptr<texture> bump;
+};
+
 class lambertian : public material
 {
 public:
@@ -32,7 +63,7 @@ public:
 		
 		scattered = ray3(record.position, target - record.position, in.time());
 		
-		atteunation = albedo->sample(record.texcoord.x(), record.texcoord.y(), record.position);
+		atteunation = albedo->sample(record.texcoord, record.position);
 
 		return true;
 	}
@@ -122,7 +153,7 @@ public:
 		float reflect_prob;
 		attenuation = albedo;
 
-		if (dot(in.direction(), record.normal) > 0)
+		if (dot(in.direction(), record.normal) > 0) // ray hit from inside
 		{
 			outward_normal = -record.normal;
 			ni_over_nt = ior;
@@ -154,28 +185,6 @@ public:
 		{
 			scattered = ray3(record.position, refracted, in.time());
 		}
-
-		return true;
-	}
-
-	virtual bool scatter3(const ray3& in, const trace_record& record, vec3& attenuation, ray3& scattered) const
-	{
-		attenuation = vec3(1.0, 1.0, 1.0);
-		vec3 refracted;
-		bool isRefracted = false;
-		const vec3& n = record.normal;
-		const vec3& i = in.direction();
-
-		if (dot(i, n) > 0)
-		{
-			isRefracted = refract(i, -n, ior/ 1.0, refracted);
-		}
-		else
-		{
-			isRefracted = refract(i,  n, 1.0 / ior, refracted);
-		}
-
-		scattered = ray3(record.position, isRefracted ? refracted : reflect(i, n), in.time());
 
 		return true;
 	}
@@ -228,9 +237,9 @@ public:
 		return false;
 	}
 
-	virtual vec3 emit(float u, float v, const vec3& p) const
+	virtual vec3 emit(const vec3& texcoord, const vec3& position) const
 	{
-		return color->sample(u, v, p);
+		return color->sample(texcoord, position);
 	}
 
 	shared_ptr<texture> color;

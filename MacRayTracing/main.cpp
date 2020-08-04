@@ -342,8 +342,8 @@ shared_ptr<world3> scene_cornell_box(camera3& camera, float aspect_ratio)
 	m1.init_translate_rot_zxy_scale(265, 0, 295, 0, 0, 15, 1);
 	objects.push_back(make_shared<transform_node>(make_shared<box3>(vec3(0, 0, 0), vec3(165, 330, 165), lambert_white), m1));
 
-	objects.push_back(make_shared<sphere3>(vec3(130, 165 + 120, 65), 120, glass_white));
-	objects.push_back(make_shared<sphere3>(vec3(265, 330 + 120, 295), 120, metal_white));
+	//objects.push_back(make_shared<sphere3>(vec3(130, 165 + 120, 65), 120, glass_white));
+	//objects.push_back(make_shared<sphere3>(vec3(265, 330 + 120, 295), 120, metal_white));
 	
 	return make_shared<world3>(objects);
 }
@@ -352,9 +352,9 @@ int raytrace()
 {
 	// Image Parameter
 	const auto aspect_ratio = 16.0 / 9.0;
-	const int image_width = 1920;
+	const int image_width = 400;
 	const int image_height = static_cast<int>(image_width / aspect_ratio);
-	const int samples_per_pixel = 8192;
+	const int samples_per_pixel = 128;
 	const int max_depth = 50;
 
 	bitmap bmp(image_width, image_height);

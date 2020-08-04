@@ -49,8 +49,8 @@ public:
 	{
 		for (int i = 0; i < 3; i++)
 		{
-			float a = _min[i] - r.origin()[i] / r.direction()[i];
-			float b = _max[i] - r.origin()[i] / r.direction()[i];
+			float a = (_min[i] - r.origin()[i]) / r.direction()[i];
+			float b = (_max[i] - r.origin()[i]) / r.direction()[i];
 			float t0 = ffmin(a, b);
 			float t1 = ffmax(a, b);
 
