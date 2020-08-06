@@ -66,14 +66,15 @@ public:
 		return false;
 	}
 
-	virtual bool bounding_box_static(float t, aabb3& box) const
+	virtual bool bounding_box_static(aabb3& box) const
 	{
-		vec3 center_t = getCenter(t);
+		vec3 center_t = getCenter(0);
 		box = aabb3(center_t - vec3(radius, radius, radius), center_t + vec3(radius, radius, radius));
 
 		return true;
 	}
 
+	/*
 	virtual bool bounding_box_dynamic(float t0, float t1, aabb3& box) const
 	{
 		aabb3 box0;
@@ -91,10 +92,11 @@ public:
 		box = aabb3(small, big);
 		return true;
 	}
+	*/
 
-	virtual bool bounding_box(float t0, float t1, aabb3& box) const
+	virtual bool bounding_box(aabb3& box) const
 	{
-		return bounding_box_dynamic(t0, t1, box);
+		return bounding_box_static(box);
 	}
 
 	vec3 getCenter(float time) const

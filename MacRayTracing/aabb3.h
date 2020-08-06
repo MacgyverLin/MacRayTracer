@@ -17,12 +17,12 @@ public:
 		this->_max = max;
 	}
 
-	vec3 min()
+	const vec3& min() const
 	{
 		return _min;
 	}
 
-	vec3 max()
+	const vec3& max() const
 	{
 		return _max;
 	}
@@ -60,6 +60,25 @@ public:
 				return false;
 		}
 		return true;
+	}
+
+	friend aabb3 operator + (const aabb3& aabb0, const aabb3& aabb1)
+	{
+		vec3 min
+		( 
+			ffmin(aabb0.min().x(), aabb1.max().x()),
+			ffmin(aabb0.min().y(), aabb1.max().y()),
+			ffmin(aabb0.min().z(), aabb1.max().z())
+		);
+
+		vec3 max
+		(
+			ffmax(aabb0.min().x(), aabb1.max().x()),
+			ffmax(aabb0.min().y(), aabb1.max().y()),
+			ffmax(aabb0.min().z(), aabb1.max().z())
+		);
+
+		return aabb3(min, max);
 	}
 
 	vec3 _min;

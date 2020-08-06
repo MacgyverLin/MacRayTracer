@@ -14,7 +14,7 @@ public:
 	}
 
 	virtual bool trace(const ray3& r, float t_min, float t_max, trace_record& rec) const = 0;
-	virtual bool bounding_box(float t0, float t1, aabb3& box) const = 0;
+	virtual bool bounding_box(aabb3& box) const = 0;
 };
 
 class transform_node : public traceable3
@@ -44,9 +44,9 @@ public:
 		}
 	}
 
-	virtual bool bounding_box(float t0, float t1, aabb3& box) const
+	virtual bool bounding_box(aabb3& box) const
 	{
-		return tracable->bounding_box(t0, t1, box);
+		return tracable->bounding_box(box);
 	}
 
 	shared_ptr<traceable3> tracable;
@@ -77,9 +77,9 @@ public:
 		}
 	}
 
-	virtual bool bounding_box(float t0, float t1, aabb3& box) const
+	virtual bool bounding_box(aabb3& box) const
 	{
-		return tracable->bounding_box(t0, t1, box);
+		return tracable->bounding_box(box);
 	}
 
 	shared_ptr<traceable3> tracable;
@@ -133,9 +133,9 @@ public:
 		return false;
 	}
 
-	virtual bool bounding_box(float t0, float t1, aabb3& box) const
+	virtual bool bounding_box(aabb3& box) const
 	{
-		return boundary->bounding_box(t0, t1, box);
+		return boundary->bounding_box(box);
 	}
 
 	shared_ptr<traceable3> boundary;

@@ -42,7 +42,7 @@ public:
 		return true;
 	}
 
-	virtual bool bounding_box(float t0, float t1, aabb3& box) const
+	virtual bool bounding_box(aabb3& box) const
 	{
 		return true;
 	}
@@ -92,7 +92,7 @@ public:
 		return true;
 	}
 
-	virtual bool bounding_box(float t0, float t1, aabb3& box) const
+	virtual bool bounding_box(aabb3& box) const
 	{
 		return true;
 	}
@@ -142,7 +142,7 @@ public:
 		return true;
 	}
 
-	virtual bool bounding_box(float t0, float t1, aabb3& box) const
+	virtual bool bounding_box(aabb3& box) const
 	{
 		return true;
 	}
