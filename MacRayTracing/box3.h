@@ -8,7 +8,7 @@ class box3 : public traceable3
 {
 public:
 	box3(const vec3& p0_, const vec3& p1_, shared_ptr<material> mat_)
-		: traceable3()
+		: traceable3(20000)
 	{
 		p0 = p0_;
 		p1 = p1_;

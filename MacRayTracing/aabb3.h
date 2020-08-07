@@ -27,58 +27,33 @@ public:
 		return _max;
 	}
 
-	bool trace2(const ray3& r, float tmin, float tmax) const
-	{
-		for (int i = 0; i < 3; i++)
-		{
-			float invD = 1.0f / r.direction()[i];
-			float t0 = _min[i] - r.origin()[i] * invD;
-			float t1 = _max[i] - r.origin()[i] * invD;
-			if (invD < 0)
-				swap(t0, t1);
-
-			tmin = ffmax(t0, tmin);
-			tmax = ffmin(t1, tmax);
-			if (tmax < tmin)
-				return false;
-		}
-		return true;
-	}
-
 	bool trace(const ray3& r, float tmin, float tmax) const
 	{
-		for (int i = 0; i < 3; i++)
+		for (int a = 0; a < 3; a++) 
 		{
-			float a = (_min[i] - r.origin()[i]) / r.direction()[i];
-			float b = (_max[i] - r.origin()[i]) / r.direction()[i];
-			float t0 = ffmin(a, b);
-			float t1 = ffmax(a, b);
-
-			tmin = ffmax(t0, tmin);
-			tmax = ffmin(t1, tmax);
-			if (tmax < tmin)
+			auto t0 = fmin((_min[a] - r.origin()[a]) / r.direction()[a],
+				(_max[a] - r.origin()[a]) / r.direction()[a]);
+			auto t1 = fmax((_min[a] - r.origin()[a]) / r.direction()[a],
+				(_max[a] - r.origin()[a]) / r.direction()[a]);
+			tmin = fmax(t0, tmin);
+			tmax = fmin(t1, tmax);
+			if (tmax <= tmin)
 				return false;
 		}
 		return true;
 	}
 
-	friend aabb3 operator + (const aabb3& aabb0, const aabb3& aabb1)
+	friend aabb3 operator + (const aabb3& box0, const aabb3& box1)
 	{
-		vec3 min
-		( 
-			ffmin(aabb0.min().x(), aabb1.max().x()),
-			ffmin(aabb0.min().y(), aabb1.max().y()),
-			ffmin(aabb0.min().z(), aabb1.max().z())
-		);
+		vec3 small(fmin(box0.min().x(), box1.min().x()),
+			fmin(box0.min().y(), box1.min().y()),
+			fmin(box0.min().z(), box1.min().z()));
 
-		vec3 max
-		(
-			ffmax(aabb0.min().x(), aabb1.max().x()),
-			ffmax(aabb0.min().y(), aabb1.max().y()),
-			ffmax(aabb0.min().z(), aabb1.max().z())
-		);
+		vec3 big(fmax(box0.max().x(), box1.max().x()),
+			fmax(box0.max().y(), box1.max().y()),
+			fmax(box0.max().z(), box1.max().z()));
 
-		return aabb3(min, max);
+		return aabb3(small, big);
 	}
 
 	vec3 _min;

@@ -10,7 +10,7 @@ class sphere3 : public traceable3
 {
 public:
 	sphere3(const vec3& center, float radius, shared_ptr<material> mat, const vec3& velocity = vec3(0, 0, 0))
-	: traceable3()
+	: traceable3(0)
 	{
 		this->center = center;
 		this->radius = radius;

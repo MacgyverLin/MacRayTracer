@@ -10,12 +10,12 @@ class xy_rect : public traceable3
 {
 public:
 	xy_rect(float x0_, float x1_, float y0_, float y1_, float k_, shared_ptr<material> mat_)
-	: traceable3()
+	: traceable3(40000)
 	{
-		this->x0 = x0_;
-		this->x1 = x1_;
-		this->y0 = y0_;
-		this->y1 = y1_;
+		this->x0 = ffmin(x0_, x1_);
+		this->x1 = ffmax(x0_, x1_);
+		this->y0 = ffmin(y0_, y1_);
+		this->y1 = ffmax(y0_, y1_);
 		this->k = k_;
 
 		mat = mat_;
@@ -44,6 +44,8 @@ public:
 
 	virtual bool bounding_box(aabb3& box) const
 	{
+		box = aabb3(vec3(x0, y0, k-0.0001), vec3(x1, y1, k + 0.0001));
+
 		return true;
 	}
 
@@ -60,12 +62,12 @@ class yz_rect : public traceable3
 {
 public:
 	yz_rect(float y0_, float y1_, float z0_, float z1_, float k_, shared_ptr<material> mat_)
-		: traceable3()
+		: traceable3(50000)
 	{
-		this->y0 = y0_;
-		this->y1 = y1_;
-		this->z0 = z0_;
-		this->z1 = z1_;
+		this->y0 = ffmin(y0_, y1_);
+		this->y1 = ffmax(y0_, y1_);
+		this->z0 = ffmin(z0_, z1_);
+		this->z1 = ffmax(z0_, z1_);
 		this->k = k_;
 
 		mat = mat_;
@@ -94,6 +96,8 @@ public:
 
 	virtual bool bounding_box(aabb3& box) const
 	{
+		box = aabb3(vec3(k - 0.0001, y0, z0), vec3(k + 0.0001, y1, z1));
+
 		return true;
 	}
 
@@ -110,12 +114,12 @@ class xz_rect : public traceable3
 {
 public:
 	xz_rect(float x0_, float x1_, float z0_, float z1_, float k_, shared_ptr<material> mat_)
-		: traceable3()
+		: traceable3(60000)
 	{
-		this->x0 = x0_;
-		this->x1 = x1_;
-		this->z0 = z0_;
-		this->z1 = z1_;
+		this->x0 = ffmin(x0_, x1_);
+		this->x1 = ffmax(x0_, x1_);
+		this->z0 = ffmin(z0_, z1_);
+		this->z1 = ffmax(z0_, z1_);
 		this->k = k_;
 
 		mat = mat_;
@@ -144,6 +148,8 @@ public:
 
 	virtual bool bounding_box(aabb3& box) const
 	{
+		box = aabb3(vec3(x0, k - 0.0001, z0), vec3(x1, k + 0.0001, z1));
+
 		return true;
 	}
 

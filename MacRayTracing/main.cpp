@@ -4,6 +4,8 @@
 #include <float.h>
 #include <math.h>
 #include <iostream>
+#include <chrono>
+#include <ctime> 
 
 #include "util.h"
 #include "vec3.h"
@@ -158,14 +160,14 @@ shared_ptr<world3> scene2(camera3& camera, float aspect_ratio, int lamberts, int
 	float ratio2 = (float)((lamberts + metals + glasses)) / total;
 
 	auto ground_mat = make_shared<lambertian>
+	(
+		make_shared<checker_texture>
 		(
-			make_shared<checker_texture>
-			(
-				make_shared<const_texture>(vec3(0.2, 0.3, 0.1)),
-				make_shared<noise_texture>(),
-				vec3(10.0, 10.0, 10.0)
-				)
-			);
+			make_shared<const_texture>(vec3(0.2, 0.3, 0.1)),
+			make_shared<noise_texture>(),
+			vec3(10.0, 10.0, 10.0)
+		)
+	);
 	objects.push_back
 	(
 		make_shared<sphere3>(vec3(0, -1000, 0), 1000, ground_mat)
@@ -183,12 +185,12 @@ shared_ptr<world3> scene2(camera3& camera, float aspect_ratio, int lamberts, int
 			if (material_sel <= ratio0) // lambertian
 			{
 				auto lambertian_mat = make_shared<lambertian>
+				(
+					make_shared<const_texture>
 					(
-						make_shared<const_texture>
-						(
-							vec3(random(), random(), random())
-							)
-						);
+						vec3(random(), random(), random())
+					)
+				);
 
 				objects.push_back
 				(
@@ -198,15 +200,15 @@ shared_ptr<world3> scene2(camera3& camera, float aspect_ratio, int lamberts, int
 			else if (material_sel <= ratio1) // metal
 			{
 				auto metal_mat = make_shared<metal>
+				(
+					vec3
 					(
-						vec3
-						(
-							0.5 + 0.5 * random(),
-							0.5 + 0.5 * random(),
-							0.5 + 0.5 * random()
-						),
-						random() * 0.5
-						);
+						0.5 + 0.5 * random(),
+						0.5 + 0.5 * random(),
+						0.5 + 0.5 * random()
+					),
+					random() * 0.5
+				);
 				objects.push_back
 				(
 					make_shared<sphere3>(center, radius, metal_mat, velocity)
@@ -215,15 +217,15 @@ shared_ptr<world3> scene2(camera3& camera, float aspect_ratio, int lamberts, int
 			else if (material_sel <= ratio2) // dielectric
 			{
 				auto dielectric_mat = make_shared<dielectric>
+				(
+					vec3
 					(
-						vec3
-						(
-							1,
-							1,
-							1
-						),
-						1.5
-						);
+						1,
+						1,
+						1
+					),
+					1.5
+				);
 				objects.push_back
 				(
 					make_shared<sphere3>(center, radius, dielectric_mat, velocity)
@@ -252,10 +254,14 @@ shared_ptr<world3> scene2(camera3& camera, float aspect_ratio, int lamberts, int
 	(
 		make_shared<sphere3>(vec3(6, 1, 2.5), 0.75, make_shared<lambertian>(img_tex))
 	);
+	objects.push_back
+	(
+		make_shared<sphere3>(vec3(6, 3, 2.5), 0.75, make_shared<lambertian>(img_tex))
+	);
 
 	objects.push_back
 	(
-		make_shared<sphere3>(vec3(0, 0, 0), -500.0, make_shared<diffuse_light>(vec3(0.0, 1.0, 1.0)))
+		make_shared<sphere3>(vec3(0, 0, 0), -500.0, make_shared<diffuse_light>(vec3(10.0, 10.0, 10.0)))
 	);
 
 	//objects.push_back
@@ -286,7 +292,7 @@ shared_ptr<world3> scene3(camera3& camera, float aspect_ratio)
 	objects.push_back(make_shared<sphere3>(vec3(0, 2, 0), 2, make_shared<lambertian>(perlin_tex)));
 	// objects.push_back(make_shared<sphere3>(vec3(3, 1, -2), 0.9, make_shared<lambertian>(const_tex)));
 	// objects.push_back(make_shared<sphere3>(vec3(3, 1, 0), 0.9, make_shared<metal>(vec3(0.8, 0.8, 0.8))));
-//     objects.push_back(make_shared<sphere3>(vec3(3, 1, 2), 0.9, make_shared<dielectric>(vec3(0.8, 0.8, 0.8), 1.5)));
+	// objects.push_back(make_shared<sphere3>(vec3(3, 1, 2), 0.9, make_shared<dielectric>(vec3(0.8, 0.8, 0.8), 1.5)));
 
 	objects.push_back
 	(
@@ -354,23 +360,61 @@ shared_ptr<world3> scene_cornell_box(camera3& camera, float aspect_ratio)
 	return make_shared<world3>(objects);
 }
 
+shared_ptr<world3> scene4(camera3& camera, float aspect_ratio)
+{
+	vec3 lookfrom(0, 0, 20);
+	vec3 lookat(0, 0, 0);
+	vec3 vup(0, 1, 0);
+	auto dist_to_focus = 10.0;
+	auto aperture = 0.1;
+	camera = camera3(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus, 0, 1.0f / 60.0f * 3);
+
+	shared_ptr<lambertian> material = make_shared<lambertian>(make_shared<const_texture>(vec3(0.8, 0.8, 0.8)));
+
+	vector<shared_ptr<traceable3>> objects;
+
+	for (int y = -10; y < 10; y++)
+	{
+		for (int x = -10; x < 10; x++)
+		{
+			objects.push_back(make_shared<sphere3>(vec3(x*1.5, y * 1.5, 0), 0.5, material));
+		}
+	}
+		
+	objects.push_back
+	(
+		make_shared<sphere3>(vec3(0, 8, 0), 5.0, make_shared<diffuse_light>(vec3(30.0, 30.0, 30.0)))
+	);
+
+	return make_shared<world3>(objects);
+}
+
 int raytrace()
 {
 	// Image Parameter
 	const auto aspect_ratio = 16.0 / 9.0;
 	const int image_width = 400;
 	const int image_height = static_cast<int>(image_width / aspect_ratio);
-	const int samples_per_pixel = 2048;
+	const int samples_per_pixel = 128;
 	const int max_depth = 50;
 
 	bitmap bmp(image_width, image_height);
 
+	auto start = std::chrono::system_clock::now();
+
 	// world & camera
 	camera3 camera;
 	//shared_ptr<world3> world = scene1(camera, aspect_ratio);
-	//shared_ptr<world3> world = scene2(camera, aspect_ratio, 4, 4, 2);
+	shared_ptr<world3> world = scene2(camera, aspect_ratio, 4, 4, 2);
 	//shared_ptr<world3> world = scene3(camera, aspect_ratio);
-	shared_ptr<world3> world = scene_cornell_box(camera, aspect_ratio);
+	//shared_ptr<world3> world = scene_cornell_box(camera, aspect_ratio);
+	//shared_ptr<world3> world = scene4(camera, aspect_ratio);
+
+	auto prepare = std::chrono::system_clock::now();
+	std::chrono::duration<double> elapsed_seconds = prepare - start;
+	printf("%f\n", elapsed_seconds.count());
+
+	world->print(0);
 
 	for (int j = 0; j < image_height; j++)
 	{
@@ -383,7 +427,7 @@ int raytrace()
 				float v = float(j + random()) / float(image_height);
 
 				ray3 r = camera.get_ray(u, v);
-				color += color3(*world, r, max_depth);
+				color += color3(*world.get(), r, max_depth);
 			}
 
 			color /= samples_per_pixel;
@@ -393,7 +437,9 @@ int raytrace()
 		cout << "line:" << j << endl;
 	}
 
-	//bmp.tonemap();
+	auto end = std::chrono::system_clock::now();
+	elapsed_seconds = end - prepare;
+	printf("%f\n", elapsed_seconds.count());
 
 	float gamma = 1.0 / 2.2;
 	float vmax = 15;
@@ -405,37 +451,6 @@ int raytrace()
 
 	return 0;
 }
-
-/*
-int monte_carlo(int sqrtN)
-{
-	double inside = 0;
-	double inside_jittered = 0;
-
-	for (int i = 0; i < sqrtN; i++)
-	{
-		for (int j = 0; j < sqrtN; j++)
-		{
-			float x = 2 * random() - 1;
-			float y = 2 * random() - 1;
-			if (x * x + y * y < 1)
-				inside++;
-
-
-			x = 2 * ((i + random()) / sqrtN) - 1;
-			y = 2 * ((j + random()) / sqrtN) - 1;
-			if (x * x + y * y < 1)
-				inside_jittered++;
-		}
-	}
-
-	cout << "-----------------------------" << endl;
-	cout << "inside: " << 4 * double(inside) / (sqrtN * sqrtN) << endl;
-	cout << "inside_jittered: " << 4 * double(inside_jittered) / (sqrtN * sqrtN) << endl;
-
-	return 0;
-}
-*/
 
 int monte_carlo_1d(int N, float (*f)(float x), float (*pdf)(float x), float (*invPDF)(float y))
 {

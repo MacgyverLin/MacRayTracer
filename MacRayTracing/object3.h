@@ -9,19 +9,35 @@
 class traceable3
 {
 public:
-	traceable3()
+	traceable3(int base)
 	{
+		static int ii = 0;
+
+		id = base + ii++;
 	}
 
 	virtual bool trace(const ray3& r, float t_min, float t_max, trace_record& rec) const = 0;
 	virtual bool bounding_box(aabb3& box) const = 0;
+	int id;
+
+	virtual void printTab(int tab)
+	{
+		for(int i=0; i<tab; i++)
+			printf("+----");
+	}
+
+	virtual void print(int tab)
+	{
+		printTab(tab);
+		printf("%d\n", id);
+	}
 };
 
 class transform_node : public traceable3
 {
 public:
 	transform_node(shared_ptr<traceable3> tracable_, const mat4& mat_)
-	: traceable3()
+	: traceable3(70000)
 	{
 		this->mat = mat_;
 		this->invmat = mat_.inverse();
@@ -58,7 +74,7 @@ class flip_normal : public traceable3
 {
 public:
 	flip_normal(shared_ptr<traceable3> tracable)
-		: traceable3()
+		: traceable3(80000)
 	{
 		this->tracable = tracable;
 	}
@@ -89,7 +105,7 @@ class const_medium : public traceable3
 {
 public:
 	const_medium(shared_ptr<traceable3> tracable_, float density_, shared_ptr<texture> texture_)
-		: traceable3()
+		: traceable3(90000)
 	{
 		this->boundary = tracable_;
 		this->density = density_;

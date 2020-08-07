@@ -4,184 +4,89 @@
 #include "util.h"
 #include "object3.h"
 
-/*
-bool comparebyx(object3* o0, object3 *o1)
-{ 
-	aabb3 box0;
-	aabb3 box1;
-	
-	o0->bounding_box(0, 0, box0);
-	o1->bounding_box(0, 0, box1);
-
-	return box0.min().x() - box0.min().x();
-}
-
-bool comparebyy(object3* o0, object3* o1)
+int comparebyx(const void* o0, const void* o1)
 {
 	aabb3 box0;
 	aabb3 box1;
 
-	o0->bounding_box(0, 0, box0);
-	o1->bounding_box(0, 0, box1);
+	(*((shared_ptr<traceable3>*)o0))->bounding_box(box0);
+	(*((shared_ptr<traceable3>*)o1))->bounding_box(box1);
 
-	return box0.min().y() - box0.min().y();
+	return (box0.min().x() - box1.min().x()) < 0.0 ? -1 : 1;
 }
 
-bool comparebyz(object3* o0, object3* o1)
+int comparebyy(const void* o0, const void* o1)
 {
 	aabb3 box0;
 	aabb3 box1;
 
-	o0->bounding_box(0, 0, box0);
-	o1->bounding_box(0, 0, box1);
+	(*((shared_ptr<traceable3>*)o0))->bounding_box(box0);
+	(*((shared_ptr<traceable3>*)o1))->bounding_box(box1);
 
-	return box0.min().z() - box0.min().z();
+	return (box0.min().y() - box1.min().y()) < 0.0 ? -1 : 1;
 }
 
-class bvhworld : public traceable3
+int comparebyz(const void* o0, const void* o1)
 {
-public:
-	bvhworld(const vector<shared_ptr<object3>>& objects, int s, int n)
+	aabb3 box0;
+	aabb3 box1;
+
+	(*((shared_ptr<traceable3>*)o0))->bounding_box(box0);
+	(*((shared_ptr<traceable3>*)o1))->bounding_box(box1);
+
+	float temp = (box0.min().z() - box1.min().z());
+	bool test = temp < 0.0;
+	if (test)
 	{
-		int axis = int(3 * random());
-		if (axis == 0)
-		{
-			std::sort(objects.begin(), objects.end(), comparebyx);
-		}
-		else if (axis == 1)
-		{
-			std::sort(objects.begin(), objects.end(), comparebyy);
-		}
-		else
-		{
-			std::sort(objects.begin(), objects.end(), comparebyz);
-		}
-
-		if (n == 1)
-		{
-			left = right = objects[s];
-		}
-		else if (n == 2)
-		{
-			left = objects[s];
-			right = objects[s+1];
-		}
-		else
-		{
-			left = make_shared<bvhworld>(objects, s, n / 2);
-			right = make_shared<bvhworld>(objects, s + n / 2, n - n / 2);
-		}
-
-		aabb3 box_left;
-		aabb3 box_right;
-
-		left->bounding_box(box_left
+		test = test;
+	}
+	else
+	{
+		test = test;
 	}
 
-	~bvhworld()
-	{
-	}
-
-	virtual bool trace(const ray3& r, float t_min, float t_max, trace_record& record) const
-	{
-		if (bound.trace(r, t_min, t_max))
-		{
-			trace_record record_left;
-			trace_record record_right;
-			bool hit_left = left->trace(r, t_min, t_max, record_left);
-			bool hit_right = right->trace(r, t_min, t_max, record_right);
-			if (hit_left && hit_right)
-			{
-				if (record_left.t < record_right.t)
-				{
-					record = record_left;
-				}
-				else
-				{
-					record = record_right;
-				}
-
-				return true;
-			}
-			else if (hit_left)
-			{
-				record = record_left;
-				return true;
-			}
-			else if (hit_right)
-			{
-				record = record_right;
-				return true;
-			}
-			else
-				return false;
-		}
-		else
-		{
-			return false;
-		}
-	}
-
-	virtual bool bounding_box(float t0, float t1, aabb3& box) const
-	{
-		box = bound;
-		return true;
-	}
-
-	shared_ptr<traceable3> left;
-	shared_ptr<traceable3> right;
-	aabb3 bound;
-};
-*/
-
-bool comparebyx(shared_ptr<traceable3>* o0, shared_ptr<traceable3>* o1)
-{
-	aabb3 box0;
-	aabb3 box1;
-
-	(*o0)->bounding_box(box0);
-	(*o1)->bounding_box(box1);
-
-	return box0.min().x() - box0.min().x();
-}
-
-bool comparebyy(shared_ptr<traceable3>* o0, shared_ptr<traceable3>* o1)
-{
-	aabb3 box0;
-	aabb3 box1;
-
-	(*o0)->bounding_box(box0);
-	(*o1)->bounding_box(box1);
-
-	return box0.min().y() - box0.min().y();
-}
-
-bool comparebyz(shared_ptr<traceable3>* o0, shared_ptr<traceable3>* o1)
-{
-	aabb3 box0;
-	aabb3 box1;
-
-	(*o0)->bounding_box(box0);
-	(*o1)->bounding_box(box1);
-
-	return box0.min().z() - box0.min().z();
+	return temp < 0.0 ? -1 : 1;
 }
 
 class bvhworld3 : public traceable3
 {
 public:
-	bvhworld3(const vector<shared_ptr<traceable3>>& traceables_, int start, int n)
+	bvhworld3()
+		: traceable3(10000)
 	{
-		int axis = 0;
+	}
+
+	static int getid()
+	{
+		static int i = 0;
+
+		return i++;
+	}
+
+	bvhworld3(vector<shared_ptr<traceable3>>& traceables_, int start = -1, int n = -1)
+		: traceable3(10000)
+	{
+		if (start < 0)
+			start = 0;
+		if (n < 0)
+			n = traceables_.size();
 		
+		int axis = random() * 3;
+		if (axis == 0)
+			qsort(&traceables_[start], n, sizeof(traceables_[start]), comparebyx);
+		else if (axis == 1)
+			qsort(&traceables_[start], n, sizeof(traceables_[start]), comparebyy);
+		else
+			qsort(&traceables_[start], n, sizeof(traceables_[start]), comparebyz);
+
 		if (n==1)
 		{
-			left = right = traceables_[0];
+			left = right = traceables_[start];
 		}
 		else if (n == 2)
 		{
-			left = traceables_[0];
-			right = traceables_[1];
+			left = traceables_[start];
+			right = traceables_[start+1];
 		}
 		else
 		{
@@ -193,8 +98,10 @@ public:
 		aabb3 box_right;
 		if (!left->bounding_box(box_left) || !right->bounding_box(box_right))
 		{
-			box = box_left + box_right;
+			printf("no bounding box in bvhworld3 constructor");
 		}
+
+		box = box_left + box_right;
 	}
 
 	~bvhworld3()
@@ -241,9 +148,19 @@ public:
 		}
 	}
 
-	virtual bool bounding_box(aabb3& box) const
+	virtual bool bounding_box(aabb3& b) const
 	{
+		b = box;
+
 		return true;
+	}
+
+	virtual void print(int tab)
+	{
+		traceable3::print(tab);
+
+		left->print(tab + 1);
+		right->print(tab + 1);
 	}
 
 	shared_ptr<traceable3> left;
@@ -251,15 +168,16 @@ public:
 	aabb3 box;
 };
 
-class world3 : public traceable3
+class simpleworld3 : public traceable3
 {
 public:
-	world3(const vector<shared_ptr<traceable3>>& traceables_)
-		: traceables(traceables_)
+	simpleworld3(const vector<shared_ptr<traceable3>>& traceables_)
+		: traceable3(100000)
+		, traceables(traceables_)
 	{
 	}
 
-	~world3()
+	~simpleworld3()
 	{
 	}
 
@@ -294,5 +212,8 @@ public:
 
 	vector<shared_ptr<traceable3>> traceables;
 };
+
+// typedef bvhworld3 world3;
+typedef simpleworld3 world3;
 
 #endif
