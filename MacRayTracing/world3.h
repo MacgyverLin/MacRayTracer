@@ -34,18 +34,17 @@ int comparebyz(const void* o0, const void* o1)
 	(*((shared_ptr<traceable3>*)o0))->bounding_box(box0);
 	(*((shared_ptr<traceable3>*)o1))->bounding_box(box1);
 
-	float temp = (box0.min().z() - box1.min().z());
-	bool test = temp < 0.0;
-	if (test)
-	{
-		test = test;
-	}
-	else
-	{
-		test = test;
-	}
+	return (box0.min().z() - box1.min().z()) < 0.0 ? -1 : 1;
+}
 
-	return temp < 0.0 ? -1 : 1;
+void shuffle(vector<shared_ptr<traceable3>>& traceables_)
+{
+	for (int k = 0; k < 100; k++)
+	{
+		int i = random() * traceables_.size();
+		int j = random() * traceables_.size();
+		swap(traceables_[i], traceables_[j]);
+	}
 }
 
 class bvhworld3 : public traceable3
@@ -78,15 +77,35 @@ public:
 			qsort(&traceables_[start], n, sizeof(traceables_[start]), comparebyy);
 		else
 			qsort(&traceables_[start], n, sizeof(traceables_[start]), comparebyz);
+		
+		/*
+		printf("--------------------------------\n");
+		shuffle(traceables_);
+		for (int i = 0; i < traceables_.size(); i++)
+		{
+			aabb3 box;
+			traceables_[i]->bounding_box(box);
+			printf("%3.4f\n", box.min().x());
+		}
 
+		printf("--------------------------------\n");
+		qsort(&traceables_[start], n, sizeof(traceables_[start]), comparebyx);
+		for (int i = 0; i < traceables_.size(); i++)
+		{
+			aabb3 box;
+			traceables_[i]->bounding_box(box);
+			printf("%3.4f\n", box.min().x());
+		}
+		*/
+		
 		if (n==1)
 		{
 			left = right = traceables_[start];
 		}
 		else if (n == 2)
 		{
-			left = traceables_[start];
-			right = traceables_[start+1];
+			left = traceables_[start + 0];
+			right = traceables_[start + 1];
 		}
 		else
 		{
@@ -213,7 +232,7 @@ public:
 	vector<shared_ptr<traceable3>> traceables;
 };
 
-// typedef bvhworld3 world3;
-typedef simpleworld3 world3;
+typedef bvhworld3 world3;
+// typedef simpleworld3 world3;
 
 #endif

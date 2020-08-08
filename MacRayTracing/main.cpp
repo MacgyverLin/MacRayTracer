@@ -383,7 +383,7 @@ shared_ptr<world3> scene4(camera3& camera, float aspect_ratio)
 		
 	objects.push_back
 	(
-		make_shared<sphere3>(vec3(0, 8, 0), 5.0, make_shared<diffuse_light>(vec3(30.0, 30.0, 30.0)))
+		make_shared<sphere3>(vec3(0, 10, 0), 3.0, make_shared<diffuse_light>(vec3(30.0, 30.0, 30.0)))
 	);
 
 	return make_shared<world3>(objects);
@@ -395,7 +395,7 @@ int raytrace()
 	const auto aspect_ratio = 16.0 / 9.0;
 	const int image_width = 400;
 	const int image_height = static_cast<int>(image_width / aspect_ratio);
-	const int samples_per_pixel = 128;
+	const int samples_per_pixel = 32;
 	const int max_depth = 50;
 
 	bitmap bmp(image_width, image_height);
