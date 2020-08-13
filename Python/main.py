@@ -20,5 +20,5 @@ def main():
             f.write("{} {} {}\n".format(ir, ig, ib))
     f.close()
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+    # main()
