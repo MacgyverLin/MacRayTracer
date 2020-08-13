@@ -232,7 +232,7 @@ public:
 	vector<shared_ptr<traceable3>> traceables;
 };
 
-typedef bvhworld3 world3;
-// typedef simpleworld3 world3;
+// typedef bvhworld3 world3;
+typedef simpleworld3 world3;
 
 #endif

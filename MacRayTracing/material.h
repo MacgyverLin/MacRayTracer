@@ -13,40 +13,18 @@ public:
 	{
 	}
 
-	virtual bool scatter(const ray3& in, const trace_record& record, vec3& atteunation, ray3& scattered) const = 0;
+	virtual bool scatter_pdf(const ray3& in, const trace_record& record, ray3& scattered)
+	{
+		float cosine = dot(record.normal, unit_vector(scattered.direction()));
+		if (cosine < 0)
+			cosine = 0;
+		
+		return cosine / ONE_PI;
+	}
+
+	virtual bool scatter(const ray3& in, const trace_record& record, vec3& albedo, ray3& scattered, float &pdf) const = 0;
 
 	virtual vec3 emit(float u, float v, const vec3& p) const = 0;
-};
-
-class standard : public material
-{
-public:
-	standard(shared_ptr<texture> albedo)//, shared_ptr<texture> bump)
-	{
-		this->albedo = albedo;
-		//this->bump = bump;
-	}
-
-	virtual bool scatter(const ray3& in, const trace_record& record, vec3& atteunation, ray3& scattered) const
-	{
-		// vec3 normal = bump->sample(record.texcoord, record.position);
-
-		vec3 target = record.position + record.normal + random_in_unit_sphere();
-
-		scattered = ray3(record.position, target - record.position, in.time());
-
-		atteunation = albedo->sample(record.texcoord, record.position);		
-
-		return true;
-	}
-
-	virtual vec3 emit(float u, float v, const vec3& p) const
-	{
-		return vec3(0, 0, 0);
-	}
-
-	shared_ptr<texture> albedo;
-	//shared_ptr<texture> bump;
 };
 
 class isotropic : public material 
@@ -57,7 +35,7 @@ public:
 	{
 	}
 
-	virtual bool scatter(const ray3& in, const trace_record& record, vec3& attenuation, ray3& scattered) const 
+	virtual bool scatter(const ray3& in, const trace_record& record, vec3& attenuation, ray3& scattered, float& pdf) const
 	{
 		scattered = ray3(record.position, random_in_unit_sphere(), in.time());
 		attenuation = albedo->sample(record.texcoord, record.position);
@@ -80,13 +58,15 @@ public:
 		this->albedo = albedo;
 	}
 
-	virtual bool scatter(const ray3& in, const trace_record& record, vec3& atteunation, ray3& scattered) const
+	virtual bool scatter(const ray3& in, const trace_record& record, vec3& albedo, ray3& scattered, float& pdf) const
 	{
 		vec3 target = record.position + record.normal + random_in_unit_sphere();
 		
 		scattered = ray3(record.position, target - record.position, in.time());
 		
-		atteunation = albedo->sample(record.texcoord, record.position);
+		albedo = this->albedo->sample(record.texcoord, record.position);
+
+		pdf = dot(record.normal, unit_vector(scattered.direction())) / ONE_PI;
 
 		return true;
 	}
@@ -113,11 +93,13 @@ public:
 		return v - 2 * dot(v, n) * n;
 	}
 
-	virtual bool scatter(const ray3& in, const trace_record& record, vec3& atteunation, ray3& scattered) const
+	virtual bool scatter(const ray3& in, const trace_record& record, vec3& atteunation, ray3& scattered, float& pdf) const
 	{
 		vec3 reflected = reflect(unit_vector(in.direction()), record.normal);
 		scattered = ray3(record.position, reflected + fuzz*random_in_unit_sphere(), in.time());
 		atteunation = albedo;
+
+		pdf = 1;
 		
 		return dot(scattered.direction(), record.normal)>0;
 	}
@@ -166,7 +148,7 @@ public:
 			return false;
 	}
 
-	virtual bool scatter2(const ray3& in, const trace_record& record, vec3& attenuation, ray3& scattered) const
+	virtual bool scatter2(const ray3& in, const trace_record& record, vec3& attenuation, ray3& scattered, float& pdf) const
 	{
 		vec3 outward_normal;
 		vec3 reflected = reflect(in.direction(), record.normal);
@@ -175,6 +157,7 @@ public:
 		float cosine;
 		float reflect_prob;
 		attenuation = albedo;
+		pdf = 1;
 
 		if (dot(in.direction(), record.normal) > 0) // ray hit from inside
 		{
@@ -212,9 +195,9 @@ public:
 		return true;
 	}
 
-	virtual bool scatter(const ray3& in, const trace_record& record, vec3& atteunation, ray3& scattered) const
+	virtual bool scatter(const ray3& in, const trace_record& record, vec3& attenuation, ray3& scattered, float& pdf) const
 	{
-		return scatter2(in, record, atteunation, scattered);
+		return scatter2(in, record, attenuation, scattered, pdf);
 	}
 
 	virtual vec3 emit(float u, float v, const vec3& p) const
@@ -234,7 +217,7 @@ public:
 		color = color_;
 	}
 
-	virtual bool scatter(const ray3& in, const trace_record& record, vec3& atteunation, ray3& scattered) const
+	virtual bool scatter(const ray3& in, const trace_record& record, vec3& attenuation, ray3& scattered, float& pdf) const
 	{
 		return false;
 	}
@@ -255,7 +238,7 @@ public:
 		color = color_;
 	}
 
-	virtual bool scatter(const ray3& in, const trace_record& record, vec3& atteunation, ray3& scattered) const
+	virtual bool scatter(const ray3& in, const trace_record& record, vec3& attenuation, ray3& scattered, float& pdf) const
 	{
 		return false;
 	}

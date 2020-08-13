@@ -93,12 +93,26 @@ vec3 color3(const world3& world, const ray3& r, int depth = 50)
 	if (world.trace(r, 0.001, FLT_MAX, record))
 	{
 		ray3 scattered;
-		vec3 atteunation;
-
 		vec3 emitted = record.mat->emit(0, 0, record.position);
-		if (depth > 0 && record.mat->scatter(r, record, atteunation, scattered))
+		float pdf;
+		vec3 albedo;
+
+		if (depth > 0 && record.mat->scatter(r, record, albedo, scattered, pdf))
 		{
-			return emitted + atteunation * color3(world, scattered, depth - 1);
+			return emitted + albedo * record.mat->scatter_pdf(r, record, scattered) * color3(world, scattered, depth - 1) / pdf / 5;
+
+			/*
+			if (record.mat->scatter_pdf(r, record, scattered)>1)
+			{
+				int a = 1;
+			}
+			if (pdf >1)
+			{
+				int a = 1;
+			}
+
+			return emitted + albedo * color3(world, scattered, depth - 1);
+			*/
 		}
 		else
 		{
@@ -352,8 +366,8 @@ shared_ptr<world3> scene_cornell_box(camera3& camera, float aspect_ratio)
 	m1.init_translate_rot_zxy_scale(265, 0, 295, 0, 0, 15, 1);
 	objects.push_back(make_shared<transform_node>(make_shared<box3>(vec3(0, 0, 0), vec3(165, 330, 165), lambert_white), m1));
 
-	//objects.push_back(make_shared<const_medium>(make_shared<sphere3>(vec3(130, 165 + 480, 65), 480, glass_white), 0.01, texture_red));
-	objects.push_back(make_shared<const_medium>(make_shared<sphere3>(vec3(265, 330 + 480, 295), 480, metal_white), 0.01, texture_green));
+	// objects.push_back(make_shared<const_medium>(make_shared<sphere3>(vec3(130, 165 + 480, 65), 480, glass_white), 0.01, texture_red));
+	// objects.push_back(make_shared<const_medium>(make_shared<sphere3>(vec3(265, 330 + 480, 295), 480, metal_white), 0.01, texture_green));
 	// objects.push_back(make_shared<sphere3>(vec3(130, 165 + 120, 65), 120, glass_white));
 	// objects.push_back(make_shared<sphere3>(vec3(265, 330 + 120, 295), 120, metal_white));
 	
@@ -395,7 +409,7 @@ int raytrace()
 	const auto aspect_ratio = 16.0 / 9.0;
 	const int image_width = 400;
 	const int image_height = static_cast<int>(image_width / aspect_ratio);
-	const int samples_per_pixel = 32;
+	const int samples_per_pixel = 1024;
 	const int max_depth = 50;
 
 	bitmap bmp(image_width, image_height);
@@ -405,9 +419,9 @@ int raytrace()
 	// world & camera
 	camera3 camera;
 	//shared_ptr<world3> world = scene1(camera, aspect_ratio);
-	shared_ptr<world3> world = scene2(camera, aspect_ratio, 4, 4, 2);
+	//shared_ptr<world3> world = scene2(camera, aspect_ratio, 4, 4, 2);
 	//shared_ptr<world3> world = scene3(camera, aspect_ratio);
-	//shared_ptr<world3> world = scene_cornell_box(camera, aspect_ratio);
+	shared_ptr<world3> world = scene_cornell_box(camera, aspect_ratio);
 	//shared_ptr<world3> world = scene4(camera, aspect_ratio);
 
 	auto prepare = std::chrono::system_clock::now();
