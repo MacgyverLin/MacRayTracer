@@ -79,6 +79,102 @@ public:
 	shared_ptr<texture> albedo;
 };
 
+class transmissive : public material
+{
+public:
+	transmissive(shared_ptr<texture> albedo, float ior)
+	{
+		this->albedo = albedo;
+		this->ior = ior;
+	}
+
+	float schlick(float cosine, float ior) const
+	{
+		auto r0 = (1 - ior) / (1 + ior);
+		r0 = r0 * r0;
+		return r0 + (1 - r0) * pow((1 - cosine), 5);
+	}
+
+	vec3 reflect(const vec3& v, const vec3& n) const
+	{
+		return v - 2 * dot(v, n) * n;
+	}
+
+	bool refract(const vec3& v, const vec3& n, float ni_over_nt, vec3& refracted) const
+	{
+		vec3 uv = unit_vector(v);
+		float dt = dot(uv, n);
+		float discriminant = 1.0 - ni_over_nt * ni_over_nt * (1.0 - dt * dt);
+		if (discriminant > 0)
+		{
+			refracted = ni_over_nt * (uv - n * dt) - n * sqrt(discriminant);
+			return true;
+		}
+		else
+			return false;
+	}
+
+	virtual bool scatter2(const ray3& in, const trace_record& record, vec3& attenuation, ray3& scattered, float& pdf) const
+	{
+		vec3 outward_normal;
+		vec3 reflected = reflect(in.direction(), record.normal);
+		float ni_over_nt;
+		vec3 refracted;
+		float cosine;
+		float reflect_prob;
+		attenuation = this->albedo->sample(record.texcoord, record.position);
+		pdf = 1;
+
+		if (dot(in.direction(), record.normal) > 0) // ray hit from inside
+		{
+			outward_normal = -record.normal;
+			ni_over_nt = ior;
+
+			cosine = ior * dot(in.direction(), record.normal) / in.direction().length();
+		}
+		else
+		{
+			outward_normal = record.normal;
+			ni_over_nt = 1.0 / ior;
+
+			cosine = -dot(in.direction(), record.normal) / in.direction().length();
+		}
+
+		if (refract(in.direction(), outward_normal, ni_over_nt, refracted))
+		{
+			reflect_prob = schlick(cosine, ior);
+		}
+		else
+		{
+			reflect_prob = 1.0;
+		}
+
+		if (random() < reflect_prob)
+		{
+			scattered = ray3(record.position, reflected, in.time());
+		}
+		else
+		{
+			scattered = ray3(record.position, refracted, in.time());
+		}
+
+		return true;
+	}
+
+	virtual bool scatter(const ray3& in, const trace_record& record, vec3& attenuation, ray3& scattered, float& pdf) const
+	{
+		return scatter2(in, record, attenuation, scattered, pdf);
+	}
+
+	virtual vec3 emit(float u, float v, const vec3& p) const
+	{
+		return vec3(0, 0, 0);
+	}
+
+	shared_ptr<texture> albedo;
+	float ior;
+};
+
 class metal : public material
 {
 public:

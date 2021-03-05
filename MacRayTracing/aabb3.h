@@ -41,7 +41,7 @@ public:
 				return false;
 		}
 		return true;
-	}
+	}	
 
 	friend aabb3 operator + (const aabb3& box0, const aabb3& box1)
 	{

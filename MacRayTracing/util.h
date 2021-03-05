@@ -98,11 +98,44 @@ int saveBMP(const char* filename, int w, int h, unsigned char* data)
     return true;
 }
 
-float random()
+typedef unsigned int uint;
+
+uint m_u = uint(521288629);
+uint m_v = uint(362436069);
+
+uint GetUintCore(uint& u, uint& v)
 {
-    return rand() / (RAND_MAX + 1.0);
+    v = uint(uint(36969) * (v & uint(65535)) + (v >> 16));
+    u = uint(uint(18000) * (u & uint(65535)) + (u >> 16));
+    return (v << 16) + u;
 }
 
+float GetUniformCore(uint& u, uint& v)
+{
+    uint z = GetUintCore(u, v);
+
+    return float(z) / uint(4294967295);
+}
+
+float GetUniform()
+{
+    return GetUniformCore(m_u, m_v);
+}
+
+unsigned int GetUint()
+{
+    return GetUintCore(m_u, m_v);
+}
+
+float random()
+{
+    return GetUniform();
+}
+
+float random_interval(float min, float max)
+{
+    return GetUniform() * (max - min) / RAND_MAX + min;
+}
 
 vec3 random_in_unit_sphere()
 {

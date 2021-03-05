@@ -33,7 +33,7 @@ public:
         this->time1 = t1;
     }
 
-    ray3 get_ray(float s, float t)
+    ray3 get_ray(float s, float t) const
     {
         vec3 rd = lens_radius * random_in_unit_disk();
         vec3 offset = u * rd.x() + v * rd.y();
